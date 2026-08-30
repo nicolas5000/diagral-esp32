@@ -89,10 +89,10 @@ The DIAG91AGFK has a 20-pins connector on the back to connect the DIAG55AAX GSM 
 Here is the pin description for the connector:
 | Pin # | Description | Used by the project? |
 |----|---|---|
-| 1 | ? | No |
-| 2 | ? | No |
-| 3 | ? | No |
-| 4 | ? | No |
+| 1 | Audio from DIAG91AGFK microphone, unknown format | No |
+| 2 | Audio to DIAG91AGFK speaker, unknown format | No |
+| 3 | Audio from DIAG91AGFK microphone, unknown format | No |
+| 4 | Audio to DIAG91AGFK speaker, unknown format | No |
 | 5 | GND | Yes (at least once) |
 | 6 | GND | Yes (at least once) |
 | 7 | Seems to be 2.8V (LVCMOS?) from DIAG91AGFK | No |
