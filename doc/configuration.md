@@ -49,7 +49,7 @@ If you choose Ethernet connectivity in the main parameters, this section permits
   - Interrupt
   - PHY Reset
 
-#### IO-HomeControl configuration parameters
+#### Diagral configuration parameters
 This section permits to configure:
 - Enable logging in Diagral UART layer (all logs from the Diagral UART layer will be sent to command line interface, and MQTT log topic if MQTT is configured)
 - Passive mode only (ESP32 is not allowed to emit)
