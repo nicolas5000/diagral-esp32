@@ -73,7 +73,7 @@ namespace Helpers
                 ESP_LOGW(TAG, "Cannot resolve syslog server '%s'", mServer.c_str());
                 return;
             }
-            struct sockaddr_in dest     = {};
+            struct sockaddr_in dest = {};
             memcpy(&dest, res->ai_addr, sizeof(dest));
             freeaddrinfo(res);
 
@@ -100,10 +100,12 @@ namespace Helpers
 
             uint8_t pri = (mFacility * 8) + severity;
 
-            // Omit timestamp — let the syslog server stamp with reception time.
-            // This avoids wrong timestamps when NTP hasn't synced yet.
+            // RFC 5424
+            // Omit timestamp — let the syslog server stamp with reception time. This avoids wrong timestamps when NTP hasn't synced yet.
+            // Use tag as APP-NAME
+            // Omit PROCID, MSGID and STRUCTURED-DATA
             char buf[256];
-            int len = snprintf(buf, sizeof(buf), "<%u>%s %s: %s",
+            int len = snprintf(buf, sizeof(buf), "<%u>1 - %s %s - - - %s",
                                (unsigned)pri, mHostname.c_str(), tag, log.c_str());
             if (len <= 0)
                 return;
