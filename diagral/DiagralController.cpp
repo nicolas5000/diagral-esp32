@@ -981,6 +981,10 @@ namespace Diagral
       {
         sDeviceState.lastError.errorType = statusFrame.data[3] == 0x00 ? DiagralErrorType::DIAGRAL_ERROR_RADIO_RESTORED : DiagralErrorType::DIAGRAL_ERROR_RADIO_LOST;
       }
+      else if (statusFrame.data[4] == DIAGRAL_DATA_ERROR_TYPE_GSM_BATTERY || statusFrame.data[4] == DIAGRAL_DATA_ERROR_TYPE_BATTERY)
+      {
+        sDeviceState.lastError.errorType = statusFrame.data[3] == 0x00 ? DiagralErrorType::DIAGRAL_ERROR_BATTERY_RESTORED : DiagralErrorType::DIAGRAL_ERROR_BATTERY_LOW;
+      }
       // Hardware type
       if (statusFrame.data[5] == 0x30 || statusFrame.data[5] == 0x31)
       {
@@ -989,6 +993,10 @@ namespace Diagral
       else if (statusFrame.data[5] == 0x20)
       {
         sDeviceState.lastError.hardwareType = DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_COMMAND;
+      }
+      else if (statusFrame.data[5] == 0x14)
+      {
+        sDeviceState.lastError.hardwareType = DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_SYSTEM;
       }
       sDeviceState.lastError.hardwareNumber = statusFrame.data[7];
       time(&sDeviceState.lastError.timestamp);
