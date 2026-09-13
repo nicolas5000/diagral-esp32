@@ -59,17 +59,13 @@ namespace Diagral
         {
             ESP_LOGI(TAG, "Detection updated: Event=0x%02X, Sensor type/number=0x%02X/%d", state.lastDetection.eventType, state.lastDetection.sensorType, state.lastDetection.sensorNumber);
         }
-        if (sDiagralManager->mDiagralDeviceState.lastTamper.timestamp != state.lastTamper.timestamp)
+        if (sDiagralManager->mDiagralDeviceState.lastError.timestamp != state.lastError.timestamp)
         {
-            ESP_LOGI(TAG, "Tamper updated: Sensor=%d, isActive=%s", state.lastTamper.sensorNumber, state.lastTamper.isActive ? "Yes" : "No");
+            ESP_LOGI(TAG, "Error updated: ErrorType=%s, HwType=%s, num=%d", DiagralErrorTypeToString(state.lastError.errorType).c_str(), DiagralErrorHardwareTypeToString(state.lastError.hardwareType).c_str(), state.lastError.hardwareNumber);
         }
         if (sDiagralManager->mDiagralDeviceState.mode != state.mode)
         {
             ESP_LOGI(TAG, "Mode updated: %s", DiagralModeToString(state.mode).c_str());
-        }
-        if (sDiagralManager->mDiagralDeviceState.power != state.power)
-        {
-            ESP_LOGI(TAG, "Power updated: %s", DiagralPowerSupplyToString(state.power).c_str());
         }
         if (sDiagralManager->mDiagralDeviceState.battery != state.battery)
         {

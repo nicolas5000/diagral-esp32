@@ -8,12 +8,6 @@
 
 namespace Diagral
 {
-    enum DiagralPowerSupply
-    {
-        POWER_UNKNOWN = -1,
-        POWER_NO_MAINS = 0,
-        POWER_MAINS = 1
-    };
     enum DiagralLanguage
     {
         LANGUAGE_UNKNOWN = -1,
@@ -44,6 +38,25 @@ namespace Diagral
         DIAGRAL_ALERT = 0x50,
         DIAGRAL_ALERT_SILENT = 0x51
     };
+    enum DiagralErrorType
+    {
+        DIAGRAL_ERROR_UNKNOWN = -1,
+        DIAGRAL_ERROR_TAMPER,
+        DIAGRAL_ERROR_TAMPER_CLEAR,
+        DIAGRAL_ERROR_MAIN_POWER_LOST,
+        DIAGRAL_ERROR_MAIN_POWER_RESTORED,
+        DIAGRAL_ERROR_BATTERY_LOW,
+        DIAGRAL_ERROR_BATTERY_RESTORED,
+        DIAGRAL_ERROR_RADIO_LOST,
+        DIAGRAL_ERROR_RADIO_RESTORED
+    };
+    enum DiagralErrorHardwareType
+    {
+        DIGRAL_ERROR_MATERIAL_SYSTEM,
+        DIGRAL_ERROR_MATERIAL_SENSOR,
+        DIGRAL_ERROR_MATERIAL_COMMAND,
+        DIGRAL_ERROR_MATERIAL_SIREN,
+    };
     enum DiagralDetectionEventType
     {
         DIAGRAL_DETECTION_EVENT_DISSUASION = 0x07,
@@ -55,7 +68,7 @@ namespace Diagral
         DIAGRAL_DETECTION_EVENT_PRE_ALARM_CONFIRMED = 0x18,
         DIAGRAL_DETECTION_EVENT_INTRUSION_CONFIRMED = 0x1A
     };
-    enum DiagralSensorType
+    enum DiagralDetectionSensorType
     {
         DIAGRAL_SENSOR_TIMEOUT = 0x00,
         DIAGRAL_SENSOR_MOVEMENT = 0x01,
@@ -67,22 +80,23 @@ namespace Diagral
         uint8_t commandNumber; // The command that triggered the alert
         time_t timestamp;
     };
-    struct DiagralTamper
+    struct DiagralError
     {
-        uint8_t sensorNumber; // 0 for Diagral system, then 1 to ... for sensors
-        bool isActive;        // 1 if tamper is active, 0 if terminated
+        uint8_t hardwareNumber;
+        DiagralErrorHardwareType hardwareType;
+        DiagralErrorType errorType;
         time_t timestamp;
     };
     struct DiagralDetectionEvent
     {
         DiagralDetectionEventType eventType;
-        DiagralSensorType sensorType;
+        DiagralDetectionSensorType sensorType;
         uint8_t sensorNumber;
         time_t timestamp;
     };
     struct DiagralDeviceState
     {
-        DiagralPowerSupply power; // Current power supply status
+        bool error;               // currently in error state
         uint8_t battery;          // current battery status, 0-100%
         DiagralLanguage language; // Current language
         DiagralMode mode;         // Current mode
@@ -92,14 +106,9 @@ namespace Diagral
         DiagralState zone4;
         int64_t lastStateTimestamp; // Timestamp of the last received state, in us (use esp_timer_get_time() to fill and compare to local date&time!)
         DiagralAlert lastAlert;
-        DiagralTamper lastTamper;
+        DiagralError lastError;
         DiagralDetectionEvent lastDetection;
     };
-
-    /// @brief Convert DiagralPowerSupply to string representation
-    /// @param power DiagralPowerSupply object to convert
-    /// @return string representation
-    std::string DiagralPowerSupplyToString(DiagralPowerSupply power);
 
     /// @brief Convert DiagralMode to string representation
     /// @param mode DiagralMode object to convert
@@ -116,14 +125,24 @@ namespace Diagral
     /// @return string representation
     std::string DiagralAlertTypeToString(DiagralAlertType alert);
 
+    /// @brief Convert DiagralErrorType to string representation
+    /// @param error DiagralErrorType object to convert
+    /// @return string representation
+    std::string DiagralErrorTypeToString(DiagralErrorType error);
+
+    /// @brief Convert DiagralErrorHardwareType to string representation
+    /// @param harware DiagralErrorHardwareType object to convert
+    /// @return string representation
+    std::string DiagralErrorHardwareTypeToString(DiagralErrorHardwareType harware);
+
     /// @brief Convert DiagralDetectionEventType to string representation
     /// @param event DiagralDetectionEventType object to convert
     /// @return string representation
     std::string DiagralDetectionEventTypeToString(DiagralDetectionEventType event);
 
-    /// @brief Convert DiagralSensorType to string representation
-    /// @param sensor DiagralSensorType object to convert
+    /// @brief Convert DiagralDetectionSensorType to string representation
+    /// @param sensor DiagralDetectionSensorType object to convert
     /// @return string representation
-    std::string DiagralSensorTypeToString(DiagralSensorType sensor);
+    std::string DiagralSensorTypeToString(DiagralDetectionSensorType sensor);
 
 } // namespace Diagral

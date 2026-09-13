@@ -39,7 +39,7 @@ namespace Diagral
   constexpr uint8_t SUBCMD_GEN_ALERT_NOTIFICATION = 0x65;     // Command from system on 'alert' event
   constexpr uint8_t SUBCMD_GEN_DETECTION_NOTIFICATION = 0x68; // Command from system on 'detection' event
   constexpr uint8_t SUBCMD_GEN_GSM_NOSIM = 0x69;              // Sent by GSM (seen when no SIM card)
-  constexpr uint8_t SUBCMD_GEN_TAMPERING_NOTIFICATION = 0x6B; // Command from system on 'tampering' event
+  constexpr uint8_t SUBCMD_GEN_ERROR_NOTIFICATION = 0x6B;     // Command from system on 'error' event (tamper, battery voltage, radio communication lost)
   constexpr uint8_t SUBCMD_GEN_GSM_STATE = 0x6C;              // Sent by GSM, contains system mode
   constexpr uint8_t SUBCMD_GEN_GSM_NOTIFICATION = 0x70;       // Sent by GSM when after SMS or voice call
   constexpr uint8_t SUBCMD_GEN_PIN_MANAGEMENT = 0x71;         // PIN code management (see K sub commands)
@@ -98,6 +98,8 @@ namespace Diagral
   constexpr uint8_t DIAGRAL_DATA_STATE_ARM_PARTIAL_BIT = 0x10;
   constexpr uint8_t DIAGRAL_DATA_STATE_ARM_ALL_BIT = 0x40;
   constexpr uint8_t DIAGRAL_DATA_STATE_ARMING_BIT = 0x80;
-  constexpr uint8_t DIAGRAL_DATA_POWER_LOST = 0x02;
+  constexpr uint8_t DIAGRAL_DATA_STATE_ERROR = 0x02;
+  constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_TAMPER = 0x40;
+  constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_RADIO = 0x59;
 
 } // namespace Diagral

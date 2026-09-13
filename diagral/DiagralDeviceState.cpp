@@ -2,19 +2,6 @@
 
 namespace Diagral
 {
-    std::string DiagralPowerSupplyToString(DiagralPowerSupply power)
-    {
-        switch (power)
-        {
-        case DiagralPowerSupply::POWER_MAINS:
-            return "On";
-        case DiagralPowerSupply::POWER_NO_MAINS:
-            return "Off";
-        case DiagralPowerSupply::POWER_UNKNOWN:
-        default:
-            return "unknown";
-        }
-    }
     std::string DiagralModeToString(DiagralMode mode)
     {
         switch (mode)
@@ -61,6 +48,46 @@ namespace Diagral
             return "unknown";
         }
     }
+    std::string DiagralErrorTypeToString(DiagralErrorType error)
+    {
+        switch (error)
+        {
+        case DiagralErrorType::DIAGRAL_ERROR_TAMPER:
+            return "tamper";
+        case DiagralErrorType::DIAGRAL_ERROR_TAMPER_CLEAR:
+            return "tamper_clear";
+        case DiagralErrorType::DIAGRAL_ERROR_MAIN_POWER_LOST:
+            return "main_power_lost";
+        case DiagralErrorType::DIAGRAL_ERROR_MAIN_POWER_RESTORED:
+            return "main_power_restored";
+        case DiagralErrorType::DIAGRAL_ERROR_BATTERY_LOW:
+            return "battery_low";
+        case DiagralErrorType::DIAGRAL_ERROR_BATTERY_RESTORED:
+            return "battery_restored";
+        case DiagralErrorType::DIAGRAL_ERROR_RADIO_LOST:
+            return "radio_lost";
+        case DiagralErrorType::DIAGRAL_ERROR_RADIO_RESTORED:
+            return "radio_restored";
+        default:
+            return "unknown";
+        }
+    }
+    std::string DiagralErrorHardwareTypeToString(DiagralErrorHardwareType harware)
+    {
+        switch (harware)
+        {
+        case DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_SYSTEM:
+            return "system";
+        case DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_SENSOR:
+            return "sensor";
+        case DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_COMMAND:
+            return "command";
+        case DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_SIREN:
+            return "siren";
+        default:
+            return "unknown";
+        }
+    }
     std::string DiagralDetectionEventTypeToString(DiagralDetectionEventType event)
     {
         switch (event)
@@ -85,15 +112,15 @@ namespace Diagral
             return "unknown";
         }
     }
-    std::string DiagralSensorTypeToString(DiagralSensorType sensor)
+    std::string DiagralSensorTypeToString(DiagralDetectionSensorType sensor)
     {
         switch (sensor)
         {
-        case DiagralSensorType::DIAGRAL_SENSOR_TIMEOUT:
+        case DiagralDetectionSensorType::DIAGRAL_SENSOR_TIMEOUT:
             return "timeout";
-        case DiagralSensorType::DIAGRAL_SENSOR_MOVEMENT:
+        case DiagralDetectionSensorType::DIAGRAL_SENSOR_MOVEMENT:
             return "movement";
-        case DiagralSensorType::DIAGRAL_SENSOR_OPENING:
+        case DiagralDetectionSensorType::DIAGRAL_SENSOR_OPENING:
             return "opening";
         default:
             return "unknown";

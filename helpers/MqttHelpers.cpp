@@ -34,7 +34,7 @@ static const std::string MQTT_CLIENT_INFO_TOPIC = "/info";                     /
 static const std::string MQTT_CLIENT_CONTROL_PANEL_TOPIC = "/control_panel";   // control panel topic
 static const std::string MQTT_CLIENT_LAST_DETECTION_TOPIC = "/last_detection"; // last detection topic
 static const std::string MQTT_CLIENT_LAST_ALERT_TOPIC = "/last_alert";         // last alert topic
-static const std::string MQTT_CLIENT_LAST_TAMPER_TOPIC = "/last_tamper";       // last tamper topic
+static const std::string MQTT_CLIENT_LAST_ERROR_TOPIC = "/last_error";         // last error topic
 static const std::string MQTT_CLIENT_DISCOVERY_TOPIC = "/config";              // config topic
 
 static const std::string MQTT_CLIENT_REBOOT_ID = "button_reboot"; // unique id suffix and topic for "reboot" button
@@ -50,7 +50,7 @@ static const std::string MQTT_CLIENT_CONTROL_PANEL_ZONES_ID = "zones";   // cont
 
 static const std::string MQTT_CLIENT_LAST_DETECTION_ID = "last_detection"; // unique id suffix for "last_detection" component
 static const std::string MQTT_CLIENT_LAST_ALERT_ID = "last_alert";         // unique id suffix for "last_alert" component
-static const std::string MQTT_CLIENT_LAST_TAMPER_ID = "last_tamper";       // unique id suffix for "last_tamper" component
+static const std::string MQTT_CLIENT_LAST_ERROR_ID = "last_error";         // unique id suffix for "last_error" component
 
 static const std::string MQTT_CLIENT_BIRTH_WILL_TOPIC = "/status"; // birth and last will topic
 static const std::string MQTT_CLIENT_BIRTH_MSG = "online";         // last will message - birth
@@ -535,6 +535,25 @@ namespace Helpers
         }
         if (!error)
         {
+            // Add 'Error' binary sensor https://www.home-assistant.io/integrations/binary_sensor.mqtt/
+            cJSON *cmp = cJSON_AddObjectToObject(cmps, "error");
+            if (cmp == NULL)
+                error = true;
+            else
+            {
+                error = error || (cJSON_AddStringToObject(cmp, "p", "binary_sensor") == NULL); // platform
+                std::string unique_id = discoveryId + "_error";
+                error = error || (cJSON_AddStringToObject(cmp, "unique_id", unique_id.c_str()) == NULL);  // unique_id
+                error = error || (cJSON_AddStringToObject(cmp, "name", "Error state") == NULL);           // name
+                error = error || (cJSON_AddStringToObject(cmp, "entity_category", "diagnostic") == NULL); // entity_category
+                error = error || (cJSON_AddStringToObject(cmp, "device_class", "problem") == NULL);       // device_class
+                std::string state_topic = mTopicPrefix + MQTT_CLIENT_INFO_TOPIC;
+                error = error || (cJSON_AddStringToObject(cmp, "state_topic", state_topic.c_str()) == NULL);         // state_topic
+                error = error || (cJSON_AddStringToObject(cmp, "value_template", "{{ value_json.error }}") == NULL); // value_template
+            }
+        }
+        if (!error)
+        {
             // Add 'Mode' sensor
             cJSON *cmp = cJSON_AddObjectToObject(cmps, "mode");
             if (cmp == NULL)
@@ -549,24 +568,6 @@ namespace Helpers
                 std::string state_topic = mTopicPrefix + MQTT_CLIENT_INFO_TOPIC;
                 error = error || (cJSON_AddStringToObject(cmp, "state_topic", state_topic.c_str()) == NULL);        // state_topic
                 error = error || (cJSON_AddStringToObject(cmp, "value_template", "{{ value_json.mode }}") == NULL); // value_template
-            }
-        }
-        if (!error)
-        {
-            // Add 'Power supply' sensor
-            cJSON *cmp = cJSON_AddObjectToObject(cmps, "power_supply");
-            if (cmp == NULL)
-                error = true;
-            else
-            {
-                error = error || (cJSON_AddStringToObject(cmp, "p", "sensor") == NULL); // platform
-                std::string unique_id = discoveryId + "_power_supply";
-                error = error || (cJSON_AddStringToObject(cmp, "unique_id", unique_id.c_str()) == NULL);  // unique_id
-                error = error || (cJSON_AddStringToObject(cmp, "name", "Power supply") == NULL);          // name
-                error = error || (cJSON_AddStringToObject(cmp, "entity_category", "diagnostic") == NULL); // entity_category
-                std::string state_topic = mTopicPrefix + MQTT_CLIENT_INFO_TOPIC;
-                error = error || (cJSON_AddStringToObject(cmp, "state_topic", state_topic.c_str()) == NULL);                // state_topic
-                error = error || (cJSON_AddStringToObject(cmp, "value_template", "{{ value_json.power_supply }}") == NULL); // value_template
             }
         }
         if (!error)
@@ -817,25 +818,31 @@ namespace Helpers
         }
         if (!error)
         {
-            // Add 'Last tamper' event https://www.home-assistant.io/integrations/event.mqtt/
-            cJSON *cmp = cJSON_AddObjectToObject(cmps, MQTT_CLIENT_LAST_TAMPER_ID.c_str());
+            // Add 'Last error' event https://www.home-assistant.io/integrations/event.mqtt/
+            cJSON *cmp = cJSON_AddObjectToObject(cmps, MQTT_CLIENT_LAST_ERROR_ID.c_str());
             if (cmp == NULL)
                 error = true;
             else
             {
                 error = error || (cJSON_AddStringToObject(cmp, "p", "event") == NULL); // platform
-                std::string unique_id = discoveryId + "_" + MQTT_CLIENT_LAST_TAMPER_ID;
+                std::string unique_id = discoveryId + "_" + MQTT_CLIENT_LAST_ERROR_ID;
                 error = error || (cJSON_AddStringToObject(cmp, "unique_id", unique_id.c_str()) == NULL); // unique_id
-                error = error || (cJSON_AddStringToObject(cmp, "name", "Last tamper") == NULL);          // name
+                error = error || (cJSON_AddStringToObject(cmp, "name", "Last error") == NULL);           // name
                 cJSON *events = cJSON_AddArrayToObject(cmp, "event_types");                              // event_types
                 if (events != NULL)
                 {
-                    cJSON_AddItemToArray(events, cJSON_CreateString("tamper"));
-                    cJSON_AddItemToArray(events, cJSON_CreateString("clear"));
+                    cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_TAMPER).c_str()));
+                    cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_TAMPER_CLEAR).c_str()));
+                    cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_MAIN_POWER_LOST).c_str()));
+                    cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_MAIN_POWER_RESTORED).c_str()));
+                    cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_BATTERY_LOW).c_str()));
+                    cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_BATTERY_RESTORED).c_str()));
+                    cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_RADIO_LOST).c_str()));
+                    cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_RADIO_RESTORED).c_str()));
                 }
                 else
                     error = true;
-                std::string state_topic = mTopicPrefix + MQTT_CLIENT_LAST_TAMPER_TOPIC;
+                std::string state_topic = mTopicPrefix + MQTT_CLIENT_LAST_ERROR_TOPIC;
                 error = error || (cJSON_AddStringToObject(cmp, "state_topic", state_topic.c_str()) == NULL); // state_topic
             }
         }
@@ -864,7 +871,7 @@ namespace Helpers
             return;
 
         // send device info if updated
-        bool send_info = (sDiagralDeviceState.mode != state.mode) || (sDiagralDeviceState.power != state.power) || (sDiagralDeviceState.battery != state.battery);
+        bool send_info = (sDiagralDeviceState.mode != state.mode) || (sDiagralDeviceState.battery != state.battery) || (sDiagralDeviceState.error != state.error);
 
         // send device state if updated
         bool send_state = sDiagralDeviceState.lastStateTimestamp != state.lastStateTimestamp;
@@ -875,16 +882,16 @@ namespace Helpers
         // send last alert if updated
         bool send_alert = sDiagralDeviceState.lastAlert.timestamp != state.lastAlert.timestamp;
 
-        // send last tamper if updated
-        bool send_tamper = sDiagralDeviceState.lastTamper.timestamp != state.lastTamper.timestamp;
+        // send last error if updated
+        bool send_error = sDiagralDeviceState.lastError.timestamp != state.lastError.timestamp;
 
         // update device local state
         memcpy((void *)&sDiagralDeviceState, (void *)&state, sizeof(state));
 
         // send MQTT messages
-        SendDeviceState(send_info, send_state, send_detection, send_alert, send_tamper);
+        SendDeviceState(send_info, send_state, send_detection, send_alert, send_error);
     }
-    void MqttHelpers::SendDeviceState(bool info, bool panel, bool detection, bool alert, bool tamper)
+    void MqttHelpers::SendDeviceState(bool info, bool panel, bool detection, bool alert, bool error)
     {
         if (info && sDiagralDeviceState.lastStateTimestamp != 0)
         {
@@ -892,8 +899,8 @@ namespace Helpers
             cJSON *infoData = cJSON_CreateObject();
             if (infoData != NULL)
             {
+                cJSON_AddStringToObject(infoData, "error", sDiagralDeviceState.error ? "ON" : "OFF");
                 cJSON_AddStringToObject(infoData, "mode", DiagralModeToString(sDiagralDeviceState.mode).c_str());
-                cJSON_AddStringToObject(infoData, "power_supply", DiagralPowerSupplyToString(sDiagralDeviceState.power).c_str());
                 cJSON_AddNumberToObject(infoData, "battery", sDiagralDeviceState.battery);
                 const char *data = cJSON_Print(infoData);
                 if (data == NULL)
@@ -937,7 +944,7 @@ namespace Helpers
                 time(&current_time);
                 int64_t time_offset = esp_timer_get_time() - sDiagralDeviceState.lastStateTimestamp;
                 if (time_offset < 0)
-                    time_offset += INT64_MAX; // esp_timer reset
+                    time_offset += INT64_MAX;          // esp_timer reset
                 current_time -= time_offset / 1000000; // us to s!
                 localtime_r(&current_time, &timeinfo);
                 strftime(strftime_buf, sizeof(strftime_buf), "%FT%TZ", &timeinfo);
@@ -1017,32 +1024,33 @@ namespace Helpers
             }
         }
 
-        if (tamper && sDiagralDeviceState.lastTamper.timestamp != 0)
+        if (error && sDiagralDeviceState.lastError.timestamp != 0)
         {
-            // send last tamper
-            cJSON *tamperData = cJSON_CreateObject();
-            if (tamperData != NULL)
+            // send last error
+            cJSON *errorData = cJSON_CreateObject();
+            if (errorData != NULL)
             {
-                cJSON_AddStringToObject(tamperData, "event_type", sDiagralDeviceState.lastTamper.isActive ? "tamper" : "clear");
-                cJSON_AddNumberToObject(tamperData, "sensor_num", sDiagralDeviceState.lastTamper.sensorNumber);
+                cJSON_AddStringToObject(errorData, "event_type", DiagralErrorTypeToString(sDiagralDeviceState.lastError.errorType).c_str());
+                cJSON_AddStringToObject(errorData, "hw_type", DiagralErrorHardwareTypeToString(sDiagralDeviceState.lastError.hardwareType).c_str());
+                cJSON_AddNumberToObject(errorData, "hw_num", sDiagralDeviceState.lastError.hardwareNumber);
                 char strftime_buf[64];
                 struct tm timeinfo;
-                localtime_r(&sDiagralDeviceState.lastTamper.timestamp, &timeinfo);
+                localtime_r(&sDiagralDeviceState.lastError.timestamp, &timeinfo);
                 strftime(strftime_buf, sizeof(strftime_buf), "%FT%TZ", &timeinfo);
-                cJSON_AddStringToObject(tamperData, "timestamp", strftime_buf);
-                const char *data = cJSON_Print(tamperData);
+                cJSON_AddStringToObject(errorData, "timestamp", strftime_buf);
+                const char *data = cJSON_Print(errorData);
                 if (data == NULL)
                 {
                     ESP_LOGE(TAG, "Failed to create tamper string");
                 }
                 else
                 {
-                    std::string tamperTopic = GetTopicPrefix() + MQTT_CLIENT_LAST_TAMPER_TOPIC;
+                    std::string tamperTopic = GetTopicPrefix() + MQTT_CLIENT_LAST_ERROR_TOPIC;
                     esp_mqtt_client_publish(mMqttClientHandle, tamperTopic.c_str(), data, 0, 0, 1);
                     cJSON_free((void *)data);
                     ESP_LOGI(TAG, "Sent tamper successfully");
                 }
-                cJSON_Delete(tamperData);
+                cJSON_Delete(errorData);
             }
         }
     }

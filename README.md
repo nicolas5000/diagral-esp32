@@ -45,10 +45,10 @@ These features are currently available:
 - Get state from Diagral alarm system:
   - Mode (idle, setup, test)
   - Zones 1 to 4 status (disarmed, arming, armed, armed "home", triggered)
-  - Power supply (power lost, power restored) and battery charging state. Note: it works only if you have a battery connected to provide power to the device!
+  - Battery charging state. Note: it works only if you have a battery connected to provide power to the device!
 - Control the alarm system: Arm/"Arm home"/Disarm with or withour PIN code (choose before building firmware or from command line), can't be modified from MQTT and Home Assistant.
 - Events:
-  - Tamper event: sensor number
+  - Error event: event type (tamper, mani power, battery, radio link), harware type (system, sensor, command, siren), hardware number
   - Detection event: event type, sensor type, sensor number
   - Alert event: alert type, command number
 - Control the ESP32:
@@ -120,7 +120,7 @@ Here is the pin description for the connector:
 In order to use this project, you will need:
 - ESP32-S3 board: I recommand to use a board with battery management already integrated like Seed Studio ESP32-S3 if your alarm system is not powered by a UPS.
 - 5 or 6 resistors (see the schematics):
-  - R1 and R2 are required only if you want to monitor battery voltage. You can choose any values but the voltage on the GPIO shall always remains under 3.3V! I choosed to use the same resistors but it's not mandatory. You can modify min (0%) and max (100%) voltage values in the configuration.
+  - R1 and R2 are required only if you want to monitor battery voltage. You can choose any values but the voltage on the GPIO shall always remains under 3.3V! I chose to use the same resistors but it's not mandatory. You can modify min (0%) and max (100%) voltage values in the configuration.
   - R3 and R4 are always required as they permit to convert the voltage level between Diagral (2.8V) and ESP32 (3.3V) for "Signal" pin.
   - R5 and R6 are always required as they permit to convert the voltage level between Diagral (2.8V) and ESP32 (3.3V) for "ESP32 TX" pin. Please note that in my case R6 is not needed as the ESP32-S3 board from Seed Studio already have a 499 ohm resistor internally.
 - Wires to connect everything to the ESP32 board

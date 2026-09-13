@@ -44,8 +44,8 @@ namespace Helpers
         /// @param panel if true, send control_panel message
         /// @param detection if true, send last_detection message
         /// @param alert if true, send last_alert message
-        /// @param tamper if true, send last_tamper message
-        void SendDeviceState(bool info, bool panel, bool detection, bool alert, bool tamper);
+        /// @param error if true, send last_error message
+        void SendDeviceState(bool info, bool panel, bool detection, bool alert, bool error);
 
         const std::string &GetTopicPrefix() { return mTopicPrefix; }
 

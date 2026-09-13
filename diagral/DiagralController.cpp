@@ -396,7 +396,7 @@ namespace Diagral
             case SUBCMD_GEN_STATE_NOTIFICATION:
             case SUBCMD_GEN_ALERT_NOTIFICATION:
             case SUBCMD_GEN_DETECTION_NOTIFICATION:
-            case SUBCMD_GEN_TAMPERING_NOTIFICATION:
+            case SUBCMD_GEN_ERROR_NOTIFICATION:
               UpdateDeviceState(frame);
               break;
             case SUBCMD_GEN_PIN_MANAGEMENT:
@@ -444,7 +444,26 @@ namespace Diagral
                   break;
                 }
               case SUBCMD_OTHERS_POWER_NOTIFICATION:
-                sDeviceState.power = (DiagralPowerSupply)frame.data[3];
+                switch (frame.data[3])
+                {
+                case 0x00:
+                case 0x02:
+                  sDeviceState.lastError.errorType = DiagralErrorType::DIAGRAL_ERROR_MAIN_POWER_LOST;
+                  break;
+                case 0x01:
+                  sDeviceState.lastError.errorType = DiagralErrorType::DIAGRAL_ERROR_MAIN_POWER_RESTORED;
+                  break;
+                case 0x03:
+                  sDeviceState.lastError.errorType = DiagralErrorType::DIAGRAL_ERROR_BATTERY_LOW;
+                  break;
+                default:
+                  DIAG_LOGE("Power notification: unknown value %d!", frame.data[3]);
+                  sDeviceState.lastError.errorType = DiagralErrorType::DIAGRAL_ERROR_UNKNOWN;
+                  break;
+                }
+                sDeviceState.lastError.hardwareType = DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_SYSTEM;
+                sDeviceState.lastError.hardwareNumber = 0;
+                time(&sDeviceState.lastError.timestamp);
                 if (!xQueueSendToBack(sDeviceStateQueue, &sDeviceState, 0))
                 {
                   DIAG_LOGE("ProcessReceivedFrameTask can't add device to queue!");
@@ -913,14 +932,7 @@ namespace Diagral
         if (statusFrame.data[6] & DIAGRAL_DATA_ZONE4)
           sDeviceState.zone4 = DIAGRAL_STATE_DISARMED;
       }
-      if (statusFrame.data[4] == DIAGRAL_DATA_POWER_LOST)
-      {
-        sDeviceState.power = DiagralPowerSupply::POWER_NO_MAINS;
-      }
-      else if (statusFrame.data[4] == 0x00)
-      {
-        sDeviceState.power = DiagralPowerSupply::POWER_MAINS;
-      }
+      sDeviceState.error = (statusFrame.data[4] & DIAGRAL_DATA_STATE_ERROR) != 0; // Error state?
       sDeviceState.lastStateTimestamp = esp_timer_get_time();
       break;
     case SUBCMD_GEN_ALERT_NOTIFICATION:
@@ -940,7 +952,7 @@ namespace Diagral
         return;
       }
       sDeviceState.lastDetection.eventType = (DiagralDetectionEventType)statusFrame.data[3];
-      sDeviceState.lastDetection.sensorType = (DiagralSensorType)statusFrame.data[8];
+      sDeviceState.lastDetection.sensorType = (DiagralDetectionSensorType)statusFrame.data[8];
       sDeviceState.lastDetection.sensorNumber = statusFrame.data[9];
       // update zones state whatever detection type
       if (statusFrame.data[4] & DIAGRAL_DATA_ZONE1)
@@ -954,15 +966,32 @@ namespace Diagral
       time(&sDeviceState.lastDetection.timestamp);
       sDeviceState.lastStateTimestamp = esp_timer_get_time();
       break;
-    case SUBCMD_GEN_TAMPERING_NOTIFICATION:
+    case SUBCMD_GEN_ERROR_NOTIFICATION:
       if (statusFrame.data_length < 10)
       {
         DIAG_LOGE("UpdateDeviceState: invalid frame length for J=0x{:02X}!", statusFrame.data[1]);
         return;
       }
-      sDeviceState.lastTamper.isActive = statusFrame.data[3] != 0x00;
-      sDeviceState.lastTamper.sensorNumber = statusFrame.data[7];
-      time(&sDeviceState.lastTamper.timestamp);
+      // Error type
+      if (statusFrame.data[4] == DIAGRAL_DATA_ERROR_TYPE_TAMPER)
+      {
+        sDeviceState.lastError.errorType = statusFrame.data[3] == 0x00 ? DiagralErrorType::DIAGRAL_ERROR_TAMPER_CLEAR : DiagralErrorType::DIAGRAL_ERROR_TAMPER;
+      }
+      else if (statusFrame.data[4] == DIAGRAL_DATA_ERROR_TYPE_RADIO)
+      {
+        sDeviceState.lastError.errorType = statusFrame.data[3] == 0x00 ? DiagralErrorType::DIAGRAL_ERROR_RADIO_RESTORED : DiagralErrorType::DIAGRAL_ERROR_RADIO_LOST;
+      }
+      // Hardware type
+      if (statusFrame.data[5] == 0x30 || statusFrame.data[5] == 0x31)
+      {
+        sDeviceState.lastError.hardwareType = DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_SENSOR;
+      }
+      else if (statusFrame.data[5] == 0x20)
+      {
+        sDeviceState.lastError.hardwareType = DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_COMMAND;
+      }
+      sDeviceState.lastError.hardwareNumber = statusFrame.data[7];
+      time(&sDeviceState.lastError.timestamp);
       break;
     default:
       DIAG_LOGE("UpdateDeviceState: unexpected frame J=0x{:02X}!", statusFrame.data[1]);

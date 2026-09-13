@@ -61,6 +61,15 @@ Here is an example of discovery message sent to this topic:
 			"command_topic":	"diagral-esp32/config/set",
 			"command_template":	"{\"Passive\": \"{{ value }}\"}"
 		},
+		"error":	{
+			"p":	"binary_sensor",
+			"unique_id":	"diagral-esp32_error",
+			"name":	"Error state",
+			"entity_category":	"diagnostic",
+			"device_class":	"problem",
+			"state_topic":	"diagral-esp32/info",
+			"value_template":	"{{ value_json.error }}"
+		},
 		"mode":	{
 			"p":	"sensor",
 			"unique_id":	"diagral-esp32_mode",
@@ -68,14 +77,6 @@ Here is an example of discovery message sent to this topic:
 			"entity_category":	"diagnostic",
 			"state_topic":	"diagral-esp32/info",
 			"value_template":	"{{ value_json.mode }}"
-		},
-		"power_supply":	{
-			"p":	"sensor",
-			"unique_id":	"diagral-esp32_power_supply",
-			"name":	"Power supply",
-			"entity_category":	"diagnostic",
-			"state_topic":	"diagral-esp32/info",
-			"value_template":	"{{ value_json.power_supply }}"
 		},
 		"battery":	{
 			"p":	"sensor",
@@ -166,12 +167,12 @@ Here is an example of discovery message sent to this topic:
 			"event_types":	["alert", "fire", "silent"],
 			"state_topic":	"diagral-esp32/last_alert"
 		},
-		"last_tamper":	{
+		"last_error":	{
 			"p":	"event",
-			"unique_id":	"diagral-esp32_last_tamper",
-			"name":	"Last tamper",
-			"event_types":	["tamper", "clear"],
-			"state_topic":	"diagral-esp32/last_tamper"
+			"unique_id":	"diagral-esp32_last_error",
+			"name":	"Last error",
+			"event_types":	["tamper", "tamper_clear", "main_power_lost", "main_power_restored", "battery_low", "battery_restored", "radio_lost", "radio_restored"],
+			"state_topic":	"diagral-esp32/last_error"
 		}
 	}
 }
