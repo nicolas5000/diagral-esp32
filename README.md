@@ -34,7 +34,7 @@ This documentation contains useful information about the project, especially:
 - [Using command line](doc/command_line.md) to test and configure the project
 - [MQTT topics and messages](doc/mqtt.md)
 - [The project development](doc/development_guide.md) (structure of the project, how the source code is organized if you want to contribute or fork...)
-- (Later) The current knowledge about the protocol and commands used between DIAG91AGFK and DIAG55AAX
+- [The current knowledge about the protocol and commands](doc/protocol.md) used between DIAG91AGFK and DIAG55AAX
 
 ### Support
 I try to give support on my free time. If you have questions you can open a subject and ask directly in English (for everyone to understand) or in French.
@@ -80,7 +80,6 @@ These features are currently available:
 
 These features should be available before end of 2026 depending on my available time:
 - ESP32 security features and OTA sofware update (expected October-November 2026 :calendar:, optional, enable if you want): flash encryption, secure boot, firmware signature, update over Wifi/Ethernet with rollback in case of failure
-- Protocol documentation (expected November-December 2026 :calendar:)
 
 ### Diagral DIAG91AGFK 20-pins connector
 The DIAG91AGFK has a 20-pins connector on the back to connect the DIAG55AAX GSM module. We use this connector for our project. Please check pin numbers:
@@ -118,11 +117,11 @@ Here is the pin description for the connector:
 ### Hardware requirements
 ![image](/doc/Diagral_ESP32_Schema.png)
 In order to use this project, you will need:
-- ESP32-S3 board: I recommand to use a board with battery management already integrated like Seed Studio ESP32-S3 if your alarm system is not powered by a UPS.
+- ESP32-S3 board: I recommand to use a board with battery management already integrated like Seeed Studio ESP32-S3 if your alarm system is not powered by a UPS.
 - 5 or 6 resistors (see the schematics):
   - R1 and R2 are required only if you want to monitor battery voltage. You can choose any values but the voltage on the GPIO shall always remains under 3.3V! I chose to use the same resistors but it's not mandatory. You can modify min (0%) and max (100%) voltage values in the configuration.
   - R3 and R4 are always required as they permit to convert the voltage level between Diagral (2.8V) and ESP32 (3.3V) for "Signal" pin.
-  - R5 and R6 are always required as they permit to convert the voltage level between Diagral (2.8V) and ESP32 (3.3V) for "ESP32 TX" pin. Please note that in my case R6 is not needed as the ESP32-S3 board from Seed Studio already have a 499 ohm resistor internally.
+  - R5 and R6 are always required as they permit to convert the voltage level between Diagral (2.8V) and ESP32 (3.3V) for "ESP32 TX" pin. Please note that in my case R6 is not needed as the ESP32-S3 board from Seeed Studio already have a 499 ohm resistor internally.
 - Wires to connect everything to the ESP32 board
 - USB cable to connect the ESP32 board to your computer
 - Battery (like 18650 battery, I didn't try to reuse the battery provided with the DIAG55AAX module but it could work)
@@ -141,7 +140,7 @@ Here are a few steps to follow to start with this project:
 1. If you are nor familiar with VSCode and ESP-IDF, I encourage you to read ESP-IDF starting guide and try the "Hello world" example on your ESP32-S3 board. You should be able to build the example, flash the binary to your ESP32-S3 board and monitor the execution from ESP-IDF monitor tool before going to next step.
 2. Download this project / clone the repository, then open the project folder in VSCode.
 3. Choose the ESP32-S3 target
-4. Open "SDK Configuration Editor" to configure the project and go to "Diagral UART Project Configuration" section. Configure network and choose the GPIO pins you want to use to connect everything. The default configuration is compatible with the ESP32-S3 board from Seed Studio (with battery management) and the schematics above.
+4. Open "SDK Configuration Editor" to configure the project and go to "Diagral UART Project Configuration" section. Configure network and choose the GPIO pins you want to use to connect everything. The default configuration is compatible with the ESP32-S3 board from Seeed Studio (with battery management) and the schematics above.
 5. Use wires to connect all the pins (see schematics above)
 6. Build the source code, flash it to the board and monitor (there is single button that does everything if you are confident, otherwise, use the 3 buttons in this order).
 
