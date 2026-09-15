@@ -1045,10 +1045,10 @@ namespace Helpers
                 }
                 else
                 {
-                    std::string tamperTopic = GetTopicPrefix() + MQTT_CLIENT_LAST_ERROR_TOPIC;
-                    esp_mqtt_client_publish(mMqttClientHandle, tamperTopic.c_str(), data, 0, 0, 1);
+                    std::string errorTopic = GetTopicPrefix() + MQTT_CLIENT_LAST_ERROR_TOPIC;
+                    esp_mqtt_client_publish(mMqttClientHandle, errorTopic.c_str(), data, 0, 0, 1);
                     cJSON_free((void *)data);
-                    ESP_LOGI(TAG, "Sent tamper successfully");
+                    ESP_LOGI(TAG, "Sent last error successfully");
                 }
                 cJSON_Delete(errorData);
             }
