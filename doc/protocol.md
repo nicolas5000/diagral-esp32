@@ -228,8 +228,8 @@ The known error types are:
 |----|----|----|
 | 0x40 | Tamper active | Tamper cleared |
 | 0x59 | Radio link lost | Radio link restored |
-| 0x70 | GSM battery low | GSM battery restored |
-| 0x71 | Battery low | Battery restored |
+| 0x70 | Battery low | Battery restored |
+| 0x71 | GSM battery low | GSM battery restored |
 
 The known hardware types are:
 | Value | Hardware |

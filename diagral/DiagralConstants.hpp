@@ -101,7 +101,7 @@ namespace Diagral
   constexpr uint8_t DIAGRAL_DATA_STATE_ERROR = 0x02;
   constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_TAMPER = 0x40;
   constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_RADIO = 0x59;
-  constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_GSM_BATTERY = 0x70;
-  constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_BATTERY = 0x71;
+  constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_BATTERY = 0x70;
+  constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_GSM_BATTERY = 0x71;
 
 } // namespace Diagral
