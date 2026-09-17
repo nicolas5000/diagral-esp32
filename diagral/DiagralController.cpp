@@ -986,7 +986,11 @@ namespace Diagral
         sDeviceState.lastError.errorType = statusFrame.data[3] == 0x00 ? DiagralErrorType::DIAGRAL_ERROR_BATTERY_RESTORED : DiagralErrorType::DIAGRAL_ERROR_BATTERY_LOW;
       }
       // Hardware type
-      if (statusFrame.data[5] == 0x30 || statusFrame.data[5] == 0x31)
+      if (statusFrame.data[5] == 0x40)
+      {
+        sDeviceState.lastError.hardwareType = DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_SIREN;
+      }
+      else if (statusFrame.data[5] == 0x30 || statusFrame.data[5] == 0x31)
       {
         sDeviceState.lastError.hardwareType = DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_SENSOR;
       }

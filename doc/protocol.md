@@ -215,13 +215,14 @@ This notification is sent by the alarm system when an error or fault is raised o
 |----|---|
 | 2 | I = 0x07 |
 | 3 | J = 0x6B |
-| 4 | Not interpreted by this project |
+| 4 | System mode: 0x00 = idle, 0x40 = test, 0x80 = setup |
 | 5 | Error state: 0x00 = cleared/restored, non-zero = active |
 | 6 | Error type (see below) |
 | 7 | Hardware type (see below) |
-| 8 | Not interpreted by this project |
+| 8 | Not interpreted by this project, seems to be always 0x00 |
 | 9 | Hardware number |
-| 10+ | Not interpreted by this project |
+| 10 | Not interpreted by this project, seems to be always 0x00 |
+| 11 | Zone the sensor is part of, if error type is 'Radio link lost' and hardware type is 'sensor' |
 
 The known error types are:
 | Value | Meaning when active | Meaning when byte 5 is 0x00 |
@@ -237,6 +238,7 @@ The known hardware types are:
 | 0x14 | Alarm system |
 | 0x20 | Command module |
 | 0x30 or 0x31 | Sensor |
+| 0x40 | Siren |
 
 The ESP32 records the error state, hardware type, hardware number, and reception time. Main power events are reported separately with [K=0x42](#k0x42---alarm-system-power-notification).
 ##### J=0x71 - PIN code management
