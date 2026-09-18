@@ -20,9 +20,9 @@ namespace Diagral
     };
     enum DiagralMode
     {
-        DIAGRAL_MODE_IDLE = 0x00, // Idle (not test, not setup mode)
-        DIAGRAL_MODE_TEST = 0x40, // Test mode
-        DIAGRAL_MODE_SETUP = 0x80 // Setup / installation mode
+        DIAGRAL_MODE_IDLE = DIAGRAL_DATA_STATE_MODE_IDLE,
+        DIAGRAL_MODE_TEST = DIAGRAL_DATA_STATE_MODE_TEST,
+        DIAGRAL_MODE_SETUP = DIAGRAL_DATA_STATE_MODE_SETUP
     };
     enum DiagralState
     {

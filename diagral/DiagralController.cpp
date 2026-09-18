@@ -922,14 +922,14 @@ namespace Diagral
       }
       else if ((statusFrame.data[3] & DIAGRAL_DATA_STATE_RESPONSE_TO_REQUEST_BIT) == 0x00)
       {
-        // Not from a request so it is a disarm state! Fill corresponding zones state with DIAGRAL_STATE_DISARMED
-        if (statusFrame.data[6] & DIAGRAL_DATA_ZONE1)
+        // Not from a request so it is a disarm state! Fill corresponding zones state with DIAGRAL_STATE_DISARMED (all zones if 0x00 in case of tamper)
+        if ((statusFrame.data[6] & DIAGRAL_DATA_ZONE1) || (statusFrame.data[6] == 0x00))
           sDeviceState.zone1 = DIAGRAL_STATE_DISARMED;
-        if (statusFrame.data[6] & DIAGRAL_DATA_ZONE2)
+        if ((statusFrame.data[6] & DIAGRAL_DATA_ZONE2) || (statusFrame.data[6] == 0x00))
           sDeviceState.zone2 = DIAGRAL_STATE_DISARMED;
-        if (statusFrame.data[6] & DIAGRAL_DATA_ZONE3)
+        if ((statusFrame.data[6] & DIAGRAL_DATA_ZONE3) || (statusFrame.data[6] == 0x00))
           sDeviceState.zone3 = DIAGRAL_STATE_DISARMED;
-        if (statusFrame.data[6] & DIAGRAL_DATA_ZONE4)
+        if ((statusFrame.data[6] & DIAGRAL_DATA_ZONE4) || (statusFrame.data[6] == 0x00))
           sDeviceState.zone4 = DIAGRAL_STATE_DISARMED;
       }
       sDeviceState.error = (statusFrame.data[4] & DIAGRAL_DATA_STATE_ERROR) != 0; // Error state?
@@ -1004,6 +1004,15 @@ namespace Diagral
       }
       sDeviceState.lastError.hardwareNumber = statusFrame.data[7];
       time(&sDeviceState.lastError.timestamp);
+      if (sDeviceState.lastError.errorType == DiagralErrorType::DIAGRAL_ERROR_TAMPER && statusFrame.data[2] != DIAGRAL_DATA_STATE_MODE_SETUP)
+      {
+        // Alarm has been triggered by a tamper event!
+        sDeviceState.zone1 = DiagralState::DIAGRAL_STATE_TRIGGERED;
+        sDeviceState.zone2 = DiagralState::DIAGRAL_STATE_TRIGGERED;
+        sDeviceState.zone3 = DiagralState::DIAGRAL_STATE_TRIGGERED;
+        sDeviceState.zone4 = DiagralState::DIAGRAL_STATE_TRIGGERED;
+      }
+      ForceDeviceStateUpdate(); // need to update error flag, zones state and last timestamp!
       break;
     default:
       DIAG_LOGE("UpdateDeviceState: unexpected frame J=0x{:02X}!", statusFrame.data[1]);
