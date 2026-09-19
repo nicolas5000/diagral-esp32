@@ -15,7 +15,7 @@
 namespace Diagral
 {
 
-  typedef void (*LoggerCallback)(esp_log_level_t log_level, const char *tag, std::string log); // Callback to receive logs from the IO controller (if verbose)
+  typedef void (*LoggerCallback)(esp_log_level_t log_level, const char *tag, std::string log); // Callback to receive logs from the controller (if verbose)
   typedef void (*UpdatedDeviceCallback)(const DiagralDeviceState &state);                      // Callback to receive status update
 
   struct BatteryMonitorConfig

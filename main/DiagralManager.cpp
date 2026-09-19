@@ -11,6 +11,17 @@ static const char *TAG = "diagralMan";
 
 #include <format>
 
+#define DIAG_LOGE(a, ...)                                                              \
+    do                                                                                 \
+    {                                                                                  \
+        loggerCallback(ESP_LOG_ERROR, TAG, std::format(a __VA_OPT__(, ) __VA_ARGS__)); \
+    } while (0)
+#define DIAG_LOGI(a, ...)                                                             \
+    do                                                                                \
+    {                                                                                 \
+        loggerCallback(ESP_LOG_INFO, TAG, std::format(a __VA_OPT__(, ) __VA_ARGS__)); \
+    } while (0)
+
 using namespace Helpers;
 using namespace Config;
 
@@ -44,32 +55,40 @@ namespace Diagral
 
     static void deviceStateCallback(const Diagral::DiagralDeviceState &state)
     {
-        ESP_LOGI(TAG, "Callback received device status");
+        DIAG_LOGI("Callback received device status");
         if (sDiagralManager == nullptr)
             return;
         if (sDiagralManager->mDiagralDeviceState.lastStateTimestamp != state.lastStateTimestamp)
         {
-            ESP_LOGI(TAG, "State updated: Mode=0x%02X, Zone1=0x%02X, Zone2=0x%02X, Zone3=0x%02X, Zone4=0x%02X", state.mode, state.zone1, state.zone2, state.zone3, state.zone4);
+            DIAG_LOGI("State updated: Mode={}, {}Zone1={}, Zone2={}, Zone3={}, Zone4={}",
+                DiagralModeToString(state.mode),
+                state.error ? "Error detected! ," : "",
+                DiagralStateToString(state.zone1),
+                DiagralStateToString(state.zone2),
+                DiagralStateToString(state.zone3),
+                DiagralStateToString(state.zone4));
         }
         if (sDiagralManager->mDiagralDeviceState.lastAlert.timestamp != state.lastAlert.timestamp)
         {
-            ESP_LOGI(TAG, "Alert updated: Type=0x%02X, Command=%d", state.lastAlert.type, state.lastAlert.commandNumber);
+            DIAG_LOGI("Alert updated: Type={}, Command={}", DiagralAlertTypeToString(state.lastAlert.type), state.lastAlert.commandNumber);
         }
         if (sDiagralManager->mDiagralDeviceState.lastDetection.timestamp != state.lastDetection.timestamp)
         {
-            ESP_LOGI(TAG, "Detection updated: Event=0x%02X, Sensor type/number=0x%02X/%d", state.lastDetection.eventType, state.lastDetection.sensorType, state.lastDetection.sensorNumber);
+            DIAG_LOGI("Detection updated: Event={}, Sensor type={}, num={}",
+                DiagralDetectionEventTypeToString(state.lastDetection.eventType),
+                DiagralSensorTypeToString(state.lastDetection.sensorType),
+                state.lastDetection.sensorNumber);
         }
         if (sDiagralManager->mDiagralDeviceState.lastError.timestamp != state.lastError.timestamp)
         {
-            ESP_LOGI(TAG, "Error updated: ErrorType=%s, HwType=%s, num=%d", DiagralErrorTypeToString(state.lastError.errorType).c_str(), DiagralErrorHardwareTypeToString(state.lastError.hardwareType).c_str(), state.lastError.hardwareNumber);
-        }
-        if (sDiagralManager->mDiagralDeviceState.mode != state.mode)
-        {
-            ESP_LOGI(TAG, "Mode updated: %s", DiagralModeToString(state.mode).c_str());
+            DIAG_LOGI("Error updated: ErrorType={}, HwType={}, num={}",
+                DiagralErrorTypeToString(state.lastError.errorType),
+                DiagralErrorHardwareTypeToString(state.lastError.hardwareType),
+                state.lastError.hardwareNumber);
         }
         if (sDiagralManager->mDiagralDeviceState.battery != state.battery)
         {
-            ESP_LOGI(TAG, "Battery updated: %d%", state.battery);
+            DIAG_LOGI("Battery updated: {}%", state.battery);
         }
         memcpy((void *)&sDiagralManager->mDiagralDeviceState, (void *)&state, sizeof(state));
         // send updated state to MQTT
@@ -91,7 +110,7 @@ namespace Diagral
         // Start everything
         if (sMqttHelper != nullptr)
         {
-            sMqttHelper->StartMqttClient();
+            sMqttHelper->StartMqttClient(this, loggerCallback);
         }
     }
     void DiagralManager::Reboot()
@@ -122,7 +141,7 @@ namespace Diagral
         if (MqttConfig::isEnabled())
         {
             // Create MQTT helper
-            sMqttHelper = new MqttHelpers(this);
+            sMqttHelper = new MqttHelpers();
         }
         else
         {

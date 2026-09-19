@@ -23,6 +23,19 @@
 #include "esp_netif.h"
 #endif
 
+static const char *TAG = "MQTTHelper";
+
+#define DIAG_LOGE(a, ...)                                                               \
+    do                                                                                  \
+    {                                                                                   \
+        sLoggerCallback(ESP_LOG_ERROR, TAG, std::format(a __VA_OPT__(, ) __VA_ARGS__)); \
+    } while (0)
+#define DIAG_LOGI(a, ...)                                                              \
+    do                                                                                 \
+    {                                                                                  \
+        sLoggerCallback(ESP_LOG_INFO, TAG, std::format(a __VA_OPT__(, ) __VA_ARGS__)); \
+    } while (0)
+
 using namespace Config;
 using namespace Diagral;
 
@@ -56,9 +69,8 @@ static const std::string MQTT_CLIENT_BIRTH_WILL_TOPIC = "/status"; // birth and 
 static const std::string MQTT_CLIENT_BIRTH_MSG = "online";         // last will message - birth
 static const std::string MQTT_CLIENT_WILL_MSG = "offline";         // last will message - death
 
-static const char *TAG = "MQTTHelper";
-
 static Diagral::DiagralDeviceState sDiagralDeviceState; // Current Diagral device state to update MQTT topics
+static LoggerCallback sLoggerCallback;                  // Callback to send logs to
 
 namespace Helpers
 {
@@ -101,7 +113,7 @@ namespace Helpers
         {
         case MQTT_EVENT_CONNECTED:
         {
-            ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+            DIAG_LOGI("MQTT_EVENT_CONNECTED");
             // send birth message
             std::string topic = mqttHelper->GetTopicPrefix() + MQTT_CLIENT_BIRTH_WILL_TOPIC;
             const char *data = MQTT_CLIENT_BIRTH_MSG.c_str();
@@ -132,7 +144,7 @@ namespace Helpers
             break;
         }
         case MQTT_EVENT_DISCONNECTED:
-            ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+            DIAG_LOGI("MQTT_EVENT_DISCONNECTED");
             mqttHelper->OnMqttDisconnected();
             break;
 
@@ -161,12 +173,12 @@ namespace Helpers
                     std::string entity_id = topic_str.substr(mqttHelper->GetTopicPrefix().length() + 1, id_len);
                     if (entity_id.compare(MQTT_CLIENT_REBOOT_ID) == 0)
                     {
-                        ESP_LOGI(TAG, "REBOOT requested from MQTT!");
+                        DIAG_LOGI("REBOOT requested from MQTT!");
                         mqttHelper->GetDiagralManager()->Reboot();
                     }
                     else if (entity_id.compare(MQTT_CLIENT_CONFIG_ID) == 0 && topic_str.ends_with(MQTT_CLIENT_COMMAND_TOPIC))
                     {
-                        ESP_LOGI(TAG, "CONFIG requested from MQTT!");
+                        DIAG_LOGI("CONFIG requested from MQTT!");
                         // Let's parse the JSON
                         char *buf = new char[event->data_len + 1];
                         memcpy(buf, event->data, event->data_len);
@@ -175,7 +187,7 @@ namespace Helpers
                         delete[] buf;
                         if (root == nullptr)
                         {
-                            ESP_LOGE(TAG, "Failed to parse JSON from CONFIG requested from MQTT!");
+                            DIAG_LOGE("Failed to parse JSON from CONFIG requested from MQTT!");
                             break;
                         }
                         // Let's check what we have to do
@@ -222,7 +234,7 @@ namespace Helpers
                         delete[] buf;
                         if (root == nullptr)
                         {
-                            ESP_LOGE(TAG, "Failed to parse JSON from CONTROL_PANEL command!");
+                            DIAG_LOGE("Failed to parse JSON from CONTROL_PANEL command!");
                             break;
                         }
                         // Let's check parameters
@@ -235,7 +247,7 @@ namespace Helpers
                         }
                         else
                         {
-                            ESP_LOGE(TAG, "Failed to extract action field from CONTROL_PANEL command!");
+                            DIAG_LOGE("Failed to extract action field from CONTROL_PANEL command!");
                             error = true;
                         }
                         cJSON *codeItem = cJSON_GetObjectItem(root, MQTT_CLIENT_CONTROL_PANEL_CODE_ID.c_str());
@@ -245,7 +257,7 @@ namespace Helpers
                         }
                         else if (mqttHelper->isPinCheckEnabled())
                         {
-                            ESP_LOGE(TAG, "Failed to extract code field from CONTROL_PANEL command!");
+                            DIAG_LOGE("Failed to extract code field from CONTROL_PANEL command!");
                             error = true;
                         }
                         cJSON *zonesItem = cJSON_GetObjectItem(root, MQTT_CLIENT_CONTROL_PANEL_ZONES_ID.c_str());
@@ -255,7 +267,7 @@ namespace Helpers
                         }
                         else
                         {
-                            ESP_LOGE(TAG, "Failed to extract zones field from CONTROL_PANEL command!");
+                            DIAG_LOGE("Failed to extract zones field from CONTROL_PANEL command!");
                             error = true;
                         }
                         // First check PIN code if enabled
@@ -263,7 +275,7 @@ namespace Helpers
                         {
                             if (!mqttHelper->GetDiagralManager()->mDiagralController->CheckPinCode(code))
                             {
-                                ESP_LOGE(TAG, "Failed to validate PIN code from CONTROL_PANEL command!");
+                                DIAG_LOGE("Failed to validate PIN code from CONTROL_PANEL command!");
                                 break;
                             }
                         }
@@ -285,41 +297,45 @@ namespace Helpers
             break;
         }
         case MQTT_EVENT_ERROR:
-            ESP_LOGE(TAG, "MQTT_EVENT_ERROR");
+            DIAG_LOGE("MQTT_EVENT_ERROR");
             if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT)
             {
-                ESP_LOGE(TAG, "Last error code reported from esp-tls: 0x%x", event->error_handle->esp_tls_last_esp_err);
-                ESP_LOGE(TAG, "Last tls stack error number: 0x%x", event->error_handle->esp_tls_stack_err);
-                ESP_LOGE(TAG, "Last captured errno : %d (%s)", event->error_handle->esp_transport_sock_errno,
+                DIAG_LOGE("Last error code reported from esp-tls: 0x{:X}", (int)event->error_handle->esp_tls_last_esp_err);
+                DIAG_LOGE("Last tls stack error number: 0x{:X}", event->error_handle->esp_tls_stack_err);
+                DIAG_LOGE("Last captured errno : {} ({})", event->error_handle->esp_transport_sock_errno,
                          strerror(event->error_handle->esp_transport_sock_errno));
             }
             else if (event->error_handle->error_type == MQTT_ERROR_TYPE_CONNECTION_REFUSED)
             {
-                ESP_LOGE(TAG, "Connection refused error: 0x%x", event->error_handle->connect_return_code);
+                DIAG_LOGE("Connection refused error: 0x{:X}", (int)event->error_handle->connect_return_code);
             }
             else
             {
-                ESP_LOGE(TAG, "Unknown error type: 0x%x", event->error_handle->error_type);
+                DIAG_LOGE("Unknown error type: 0x{:X}", (int)event->error_handle->error_type);
             }
             break;
         default:
-            ESP_LOGI(TAG, "Other event id:%d", event->event_id);
+            DIAG_LOGI("Other event id:{}", (int)event->event_id);
             break;
         }
     }
 
-    MqttHelpers::MqttHelpers(Diagral::DiagralManager *manager)
-        : mDiagralManager(manager), mStarted(false), mMqttClientHandle(nullptr), mReconnectTimer(nullptr)
+    MqttHelpers::MqttHelpers()
+        : mStarted(false), mMqttClientHandle(nullptr), mReconnectTimer(nullptr)
     {
         mIsDiagralPassive = DiagralConfig::isPassiveModeEnabled();
         mIsPinCheckEnabled = DiagralConfig::isPinCodeCheckEnabled();
         mTopicPrefix = MqttConfig::GetTopicPrefix();
         mDiscoveryPrefix = MqttConfig::GetDiscoveryPrefix();
     }
-    esp_err_t MqttHelpers::StartMqttClient()
+    esp_err_t MqttHelpers::StartMqttClient(Diagral::DiagralManager *manager, LoggerCallback logger)
     {
         if (!MqttConfig::isEnabled() || mStarted)
             return ESP_ERR_NOT_ALLOWED;
+        if (manager == nullptr || logger == nullptr)
+            return ESP_ERR_INVALID_ARG;
+        mDiagralManager = manager;
+        sLoggerCallback = logger;
         esp_err_t err = ESP_OK;
         // Configure client
         esp_mqtt_client_config_t mqtt_cfg;
@@ -345,7 +361,7 @@ namespace Helpers
         mMqttClientHandle = esp_mqtt_client_init(&mqtt_cfg);
         if (mMqttClientHandle == NULL)
         {
-            ESP_LOGE(TAG, "Failed to create MQTT client!");
+            DIAG_LOGE("Failed to create MQTT client!");
             return ESP_FAIL;
         }
         // Create one-shot reconnect timer (fires when broker drops but WiFi is still up)
@@ -355,7 +371,7 @@ namespace Helpers
         timer_args.name = "mqtt_reconnect";
         if (esp_timer_create(&timer_args, &mReconnectTimer) != ESP_OK)
         {
-            ESP_LOGE(TAG, "Failed to create MQTT reconnect timer!");
+            DIAG_LOGE("Failed to create MQTT reconnect timer!");
             esp_mqtt_client_destroy(mMqttClientHandle);
             mMqttClientHandle = nullptr;
             return ESP_FAIL;
@@ -364,7 +380,7 @@ namespace Helpers
         err = esp_mqtt_client_register_event(mMqttClientHandle, MQTT_EVENT_ANY, mqtt_event_handler, this);
         if (err != ESP_OK)
         {
-            ESP_LOGE(TAG, "Failed to register MQTT event handler! (%d)", err);
+            DIAG_LOGE("Failed to register MQTT event handler! ({})", err);
             esp_timer_delete(mReconnectTimer);
             mReconnectTimer = nullptr;
             esp_mqtt_client_destroy(mMqttClientHandle);
@@ -384,7 +400,7 @@ namespace Helpers
         err = esp_mqtt_client_start(mMqttClientHandle);
         if (err != ESP_OK)
         {
-            ESP_LOGE(TAG, "Failed to start MQTT client! (%d)", err);
+            DIAG_LOGE("Failed to start MQTT client! ({})", err);
             esp_timer_delete(mReconnectTimer);
             mReconnectTimer = nullptr;
             esp_mqtt_client_destroy(mMqttClientHandle);
@@ -399,14 +415,14 @@ namespace Helpers
         if (!mStarted || mMqttClientHandle == nullptr)
             return;
         esp_timer_stop(mReconnectTimer); // cancel any pending broker-drop retry
-        ESP_LOGI(TAG, "Network up — triggering MQTT reconnect");
+        DIAG_LOGI("Network up — triggering MQTT reconnect");
         esp_mqtt_client_reconnect(mMqttClientHandle);
     }
     void MqttHelpers::OnNetworkDisconnected()
     {
         if (!mStarted || mReconnectTimer == nullptr)
             return;
-        ESP_LOGI(TAG, "Network down — cancelling MQTT reconnect timer");
+        DIAG_LOGI("Network down — cancelling MQTT reconnect timer");
         esp_timer_stop(mReconnectTimer);
     }
     void MqttHelpers::OnMqttDisconnected()
@@ -418,7 +434,7 @@ namespace Helpers
             // WiFi is up — broker dropped independently; retry in 5 seconds
             esp_timer_stop(mReconnectTimer);
             esp_timer_start_once(mReconnectTimer, 5ULL * 1000 * 1000);
-            ESP_LOGI(TAG, "Broker unreachable — will retry in 5s");
+            DIAG_LOGI("Broker unreachable — will retry in 5s");
         }
         // If WiFi is down, OnNetworkConnected() will trigger reconnect when IP is obtained
     }
@@ -854,13 +870,13 @@ namespace Helpers
             const char *data = cJSON_Print(discovery);
             if (data == NULL)
             {
-                ESP_LOGE(TAG, "Failed to create controller discovery string");
+                DIAG_LOGE("Failed to create controller discovery string");
             }
             else
             {
                 esp_mqtt_client_publish(mMqttClientHandle, topic.c_str(), data, 0, 0, 1);
                 cJSON_free((void *)data);
-                ESP_LOGI(TAG, "Sent controller discovery successfully");
+                DIAG_LOGI("Sent controller discovery successfully");
             }
         }
         cJSON_Delete(discovery);
@@ -905,14 +921,14 @@ namespace Helpers
                 const char *data = cJSON_Print(infoData);
                 if (data == NULL)
                 {
-                    ESP_LOGE(TAG, "Failed to create device info string");
+                    DIAG_LOGE("Failed to create device info string");
                 }
                 else
                 {
                     std::string infoTopic = GetTopicPrefix() + MQTT_CLIENT_INFO_TOPIC;
                     esp_mqtt_client_publish(mMqttClientHandle, infoTopic.c_str(), data, 0, 0, 1);
                     cJSON_free((void *)data);
-                    ESP_LOGI(TAG, "Sent device info successfully");
+                    DIAG_LOGI("Sent device info successfully");
                 }
                 cJSON_Delete(infoData);
             }
@@ -952,14 +968,14 @@ namespace Helpers
                 const char *data = cJSON_Print(stateData);
                 if (data == NULL)
                 {
-                    ESP_LOGE(TAG, "Failed to create device state string");
+                    DIAG_LOGE("Failed to create device state string");
                 }
                 else
                 {
                     std::string stateTopic = GetTopicPrefix() + MQTT_CLIENT_CONTROL_PANEL_TOPIC + MQTT_CLIENT_STATE_TOPIC;
                     esp_mqtt_client_publish(mMqttClientHandle, stateTopic.c_str(), data, 0, 0, 1);
                     cJSON_free((void *)data);
-                    ESP_LOGI(TAG, "Sent device state successfully");
+                    DIAG_LOGI("Sent device state successfully");
                 }
                 cJSON_Delete(stateData);
             }
@@ -982,14 +998,14 @@ namespace Helpers
                 const char *data = cJSON_Print(detectionData);
                 if (data == NULL)
                 {
-                    ESP_LOGE(TAG, "Failed to create detection string");
+                    DIAG_LOGE("Failed to create detection string");
                 }
                 else
                 {
                     std::string detectionTopic = GetTopicPrefix() + MQTT_CLIENT_LAST_DETECTION_TOPIC;
                     esp_mqtt_client_publish(mMqttClientHandle, detectionTopic.c_str(), data, 0, 0, 1);
                     cJSON_free((void *)data);
-                    ESP_LOGI(TAG, "Sent detection successfully");
+                    DIAG_LOGI("Sent detection successfully");
                 }
                 cJSON_Delete(detectionData);
             }
@@ -1011,14 +1027,14 @@ namespace Helpers
                 const char *data = cJSON_Print(alertData);
                 if (data == NULL)
                 {
-                    ESP_LOGE(TAG, "Failed to create alert string");
+                    DIAG_LOGE("Failed to create alert string");
                 }
                 else
                 {
                     std::string alertTopic = GetTopicPrefix() + MQTT_CLIENT_LAST_ALERT_TOPIC;
                     esp_mqtt_client_publish(mMqttClientHandle, alertTopic.c_str(), data, 0, 0, 1);
                     cJSON_free((void *)data);
-                    ESP_LOGI(TAG, "Sent alert successfully");
+                    DIAG_LOGI("Sent alert successfully");
                 }
                 cJSON_Delete(alertData);
             }
@@ -1041,14 +1057,14 @@ namespace Helpers
                 const char *data = cJSON_Print(errorData);
                 if (data == NULL)
                 {
-                    ESP_LOGE(TAG, "Failed to create tamper string");
+                    DIAG_LOGE("Failed to create tamper string");
                 }
                 else
                 {
                     std::string errorTopic = GetTopicPrefix() + MQTT_CLIENT_LAST_ERROR_TOPIC;
                     esp_mqtt_client_publish(mMqttClientHandle, errorTopic.c_str(), data, 0, 0, 1);
                     cJSON_free((void *)data);
-                    ESP_LOGI(TAG, "Sent last error successfully");
+                    DIAG_LOGI("Sent last error successfully");
                 }
                 cJSON_Delete(errorData);
             }

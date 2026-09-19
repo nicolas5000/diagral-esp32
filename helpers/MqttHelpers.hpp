@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "esp_log_level.h"
 #include "esp_err.h"
 #include "esp_timer.h"
 
@@ -11,6 +12,7 @@
 // forward declaration
 namespace Diagral
 {
+    typedef void (*LoggerCallback)(esp_log_level_t log_level, const char *tag, std::string log); // Callback to receive logs from the helper (if verbose)
     class DiagralManager;
     struct DiagralDeviceState;
     struct DiagralAlert;
@@ -25,11 +27,12 @@ namespace Helpers
     {
     public:
         /// @brief Construct a new MqttHelpers object
-        /// @param manager Pointer to IoRtsManager object
-        MqttHelpers(Diagral::DiagralManager *manager);
+        MqttHelpers();
         /// @brief Start MQTT client
+        /// @param manager Pointer to IoRtsManager object
+        /// @param logger Logging function
         /// @return ESP_OK if no error, ESP_ERR_NOT_ALLOWED if MQTT is not enabled in configuration or already started, ...
-        esp_err_t StartMqttClient();
+        esp_err_t StartMqttClient(Diagral::DiagralManager *manager, Diagral::LoggerCallback logger);
 
         /// @brief Send discovery messages compatible with Home Assistant
         /// Sends a controller device discovery and a separate discovery for each IO device (linked via via_device)
