@@ -7,7 +7,14 @@
 #include "esp_log.h"
 #include "sdkconfig.h"
 
+#include "esp_http_client.h"
+#include "esp_https_ota.h"
+#include "esp_ota_ops.h"
+
 static const char *TAG = "diagralMan";
+
+extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
+extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
 
 #include <format>
 
@@ -61,12 +68,12 @@ namespace Diagral
         if (sDiagralManager->mDiagralDeviceState.lastStateTimestamp != state.lastStateTimestamp)
         {
             DIAG_LOGI("State updated: Mode={}, {}Zone1={}, Zone2={}, Zone3={}, Zone4={}",
-                DiagralModeToString(state.mode),
-                state.error ? "Error detected! ," : "",
-                DiagralStateToString(state.zone1),
-                DiagralStateToString(state.zone2),
-                DiagralStateToString(state.zone3),
-                DiagralStateToString(state.zone4));
+                      DiagralModeToString(state.mode),
+                      state.error ? "Error detected! ," : "",
+                      DiagralStateToString(state.zone1),
+                      DiagralStateToString(state.zone2),
+                      DiagralStateToString(state.zone3),
+                      DiagralStateToString(state.zone4));
         }
         if (sDiagralManager->mDiagralDeviceState.lastAlert.timestamp != state.lastAlert.timestamp)
         {
@@ -75,16 +82,16 @@ namespace Diagral
         if (sDiagralManager->mDiagralDeviceState.lastDetection.timestamp != state.lastDetection.timestamp)
         {
             DIAG_LOGI("Detection updated: Event={}, Sensor type={}, num={}",
-                DiagralDetectionEventTypeToString(state.lastDetection.eventType),
-                DiagralSensorTypeToString(state.lastDetection.sensorType),
-                state.lastDetection.sensorNumber);
+                      DiagralDetectionEventTypeToString(state.lastDetection.eventType),
+                      DiagralSensorTypeToString(state.lastDetection.sensorType),
+                      state.lastDetection.sensorNumber);
         }
         if (sDiagralManager->mDiagralDeviceState.lastError.timestamp != state.lastError.timestamp)
         {
             DIAG_LOGI("Error updated: ErrorType={}, HwType={}, num={}",
-                DiagralErrorTypeToString(state.lastError.errorType),
-                DiagralErrorHardwareTypeToString(state.lastError.hardwareType),
-                state.lastError.hardwareNumber);
+                      DiagralErrorTypeToString(state.lastError.errorType),
+                      DiagralErrorHardwareTypeToString(state.lastError.hardwareType),
+                      state.lastError.hardwareNumber);
         }
         if (sDiagralManager->mDiagralDeviceState.battery != state.battery)
         {
@@ -116,6 +123,56 @@ namespace Diagral
     void DiagralManager::Reboot()
     {
         esp_restart();
+    }
+    void DiagralManager::Upgrade(std::string url)
+    {
+        DIAG_LOGI("Starting OTA");
+        esp_http_client_config_t config = {};
+        config.url = url.c_str();
+        config.cert_pem = (char *)server_cert_pem_start;
+        config.keep_alive_enable = true;
+#if CONFIG_MBEDTLS_DYNAMIC_BUFFER
+        config.tls_dyn_buf_strategy = HTTP_TLS_DYN_BUF_RX_STATIC;
+#endif
+        config.skip_cert_common_name_check = false;
+
+        esp_https_ota_config_t ota_config = {};
+        ota_config.http_config = &config;
+        ota_config.ota_resumption = false;
+
+        DIAG_LOGI("Attempting to download update from {}", url);
+        esp_err_t ret = esp_https_ota(&ota_config);
+        if (ret == ESP_OK)
+        {
+            DIAG_LOGI("OTA Succeed, Rebooting...");
+            Reboot();
+        }
+        else
+        {
+            DIAG_LOGE("Firmware upgrade failed");
+        }
+    }
+    void DiagralManager::NotifyMQTTConnected()
+    {
+        if (mDisableRollback)
+        {
+            DIAG_LOGI("Checking OTA pending state...");
+            const esp_partition_t *running = esp_ota_get_running_partition();
+            esp_ota_img_states_t ota_state;
+            if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK)
+            {
+                mDisableRollback = false;
+                if (ota_state == ESP_OTA_IMG_PENDING_VERIFY)
+                {
+                    esp_ota_mark_app_valid_cancel_rollback();
+                    DIAG_LOGI("Rollback cancelled!");
+                }
+                else
+                {
+                    DIAG_LOGI("No need to cancel rollback!");
+                }
+            }
+        }
     }
     void DiagralManager::InitializeDiagral()
     {

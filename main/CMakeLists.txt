@@ -5,5 +5,6 @@ idf_component_register(SRCS "main.cpp" "DiagralManager.cpp" "../diagral/DiagralC
                         "../config/MiscConfig.cpp" "../config/NetworkConfig.cpp" "../config/HardwareConfig.cpp" "../config/MqttConfig.cpp" "../config/DiagralConfig.cpp"
                         "../config/SyslogConfig.cpp"
                     INCLUDE_DIRS "." "../config" "../helpers" "../diagral"
-                    PRIV_REQUIRES esp_adc
-                    REQUIRES esp_timer esp_driver_spi esp_driver_gpio console esp_driver_uart mbedtls nvs_flash esp_wifi esp_eth mqtt esp_app_format littlefs)
+                    PRIV_REQUIRES esp_adc esp_http_client app_update esp_https_ota
+                    REQUIRES esp_timer esp_driver_spi esp_driver_gpio console esp_driver_uart mbedtls nvs_flash esp_wifi esp_eth mqtt esp_app_format littlefs
+                    EMBED_TXTFILES ${project_dir}/ca_cert.pem)

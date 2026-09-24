@@ -13,12 +13,13 @@ As previously said, you can choose default values before building the firmware:
 - In VSCode: use the ESP-IDF addon by clicking on "SDK Configuration Editor (menuconfig)". Then go to "Diagral UART Project Configuration" section.
 - Using a terminal: execute command 'idf.py menuconfig' (see ESP-IDF documentation)
 > [!NOTE]
-> Some parameters can be defined only defore building the firmware, especially parameters related to hardware configuration.
+> Some parameters can be defined only before building the firmware, especially parameters related to hardware configuration.
 Most of the parameters have a description to help you to choose the value.
 
 #### Main parameters
 This section permits to configure:
 - Default value for password used to protect command line access
+- OTA update using only HTTPS (secure update from known server)
 - Wifi or Ethernet connectivity
 - DHCP or static IPv4
 - ESP32 hostname on your network

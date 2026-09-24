@@ -52,6 +52,9 @@ static const std::string MQTT_CLIENT_DISCOVERY_TOPIC = "/config";              /
 
 static const std::string MQTT_CLIENT_REBOOT_ID = "button_reboot"; // unique id suffix and topic for "reboot" button
 
+static const std::string MQTT_CLIENT_OTA_UPGRADE_ID = "ota_upgrade"; // unique id suffix and topic for "upgrade" command
+static const std::string MQTT_CLIENT_OTA_URL = "url";                // unique id for "URL" for "upgrade" command
+
 static const std::string MQTT_CLIENT_CONFIG_ID = "config";   // id for configuration components
 static const std::string MQTT_CLIENT_LOGGING_ID = "Logging"; // unique id and action for "Logging" component
 static const std::string MQTT_CLIENT_PASSIVE_ID = "Passive"; // unique id and action for "Passive" component
@@ -114,6 +117,7 @@ namespace Helpers
         case MQTT_EVENT_CONNECTED:
         {
             DIAG_LOGI("MQTT_EVENT_CONNECTED");
+            mqttHelper->GetDiagralManager()->NotifyMQTTConnected();
             // send birth message
             std::string topic = mqttHelper->GetTopicPrefix() + MQTT_CLIENT_BIRTH_WILL_TOPIC;
             const char *data = MQTT_CLIENT_BIRTH_MSG.c_str();
@@ -176,11 +180,62 @@ namespace Helpers
                         DIAG_LOGI("REBOOT requested from MQTT!");
                         mqttHelper->GetDiagralManager()->Reboot();
                     }
+                    else if (entity_id.compare(MQTT_CLIENT_OTA_UPGRADE_ID) == 0)
+                    {
+                        DIAG_LOGI("UPGRADE requested from MQTT!");
+                        // Let's parse the JSON
+                        char *buf = new char[event->data_len + 1];
+                        if (buf == nullptr)
+                        {
+                            DIAG_LOGE("Failed to allocate buffer to parse JSON!");
+                            break;
+                        }
+                        memcpy(buf, event->data, event->data_len);
+                        buf[event->data_len] = '\0';
+                        cJSON *root = cJSON_Parse(buf);
+                        delete[] buf;
+                        if (root == nullptr)
+                        {
+                            DIAG_LOGE("Failed to parse JSON from UPGRADE requested from MQTT!");
+                            break;
+                        }
+                        // Let's extract URL
+                        cJSON *urlItem = cJSON_GetObjectItem(root, MQTT_CLIENT_OTA_URL.c_str());
+                        if (cJSON_IsString(urlItem))
+                        {
+                            std::string value(urlItem->valuestring);
+                            if (value.ends_with(".bin") &&
+#if CONFIG_OTA_UPDATE_HTTPS_ONLY
+                                value.starts_with("https://")
+#else
+                                value.starts_with("http://")
+#endif
+                            )
+                            {
+                                mqttHelper->GetDiagralManager()->Upgrade(value);
+                            }
+                            else
+                            {
+                                DIAG_LOGE("Invalid URL for OTA: {}", value);
+                            }
+                        }
+                        else
+                        {
+                            DIAG_LOGE("Failed to extract URL from JSON for UPGRADE requested from MQTT!");
+                        }
+                        // Don't forget to delete JSON object to free memory!
+                        cJSON_Delete(root);
+                    }
                     else if (entity_id.compare(MQTT_CLIENT_CONFIG_ID) == 0 && topic_str.ends_with(MQTT_CLIENT_COMMAND_TOPIC))
                     {
                         DIAG_LOGI("CONFIG requested from MQTT!");
                         // Let's parse the JSON
                         char *buf = new char[event->data_len + 1];
+                        if (buf == nullptr)
+                        {
+                            DIAG_LOGE("Failed to allocate buffer to parse JSON!");
+                            break;
+                        }
                         memcpy(buf, event->data, event->data_len);
                         buf[event->data_len] = '\0';
                         cJSON *root = cJSON_Parse(buf);
@@ -303,7 +358,7 @@ namespace Helpers
                 DIAG_LOGE("Last error code reported from esp-tls: 0x{:X}", (int)event->error_handle->esp_tls_last_esp_err);
                 DIAG_LOGE("Last tls stack error number: 0x{:X}", event->error_handle->esp_tls_stack_err);
                 DIAG_LOGE("Last captured errno : {} ({})", event->error_handle->esp_transport_sock_errno,
-                         strerror(event->error_handle->esp_transport_sock_errno));
+                          strerror(event->error_handle->esp_transport_sock_errno));
             }
             else if (event->error_handle->error_type == MQTT_ERROR_TYPE_CONNECTION_REFUSED)
             {
@@ -501,6 +556,26 @@ namespace Helpers
                 error = error || (cJSON_AddStringToObject(cmp, "name", "Reboot") == NULL);               // name
                 std::string reboot_topic = mTopicPrefix + "/" + MQTT_CLIENT_REBOOT_ID + MQTT_CLIENT_COMMAND_TOPIC;
                 error = error || (cJSON_AddStringToObject(cmp, "command_topic", reboot_topic.c_str()) == NULL); // command_topic
+            }
+        }
+        if (!error)
+        {
+            // Add upgrade text (disabled entity by default) https://www.home-assistant.io/integrations/text.mqtt/
+            cJSON *cmp = cJSON_AddObjectToObject(cmps, "upgrade");
+            if (cmp == NULL)
+                error = true;
+            else
+            {
+                error = error || (cJSON_AddStringToObject(cmp, "p", "text") == NULL); // platform
+                std::string unique_id = discoveryId + "_" + MQTT_CLIENT_OTA_UPGRADE_ID;
+                error = error || (cJSON_AddStringToObject(cmp, "unique_id", unique_id.c_str()) == NULL); // unique_id
+                error = error || (cJSON_AddStringToObject(cmp, "name", "OTA Upgrade URL") == NULL);      // name
+                error = error || (cJSON_AddStringToObject(cmp, "entity_category", "config") == NULL);
+                error = error || (cJSON_AddBoolToObject(cmp, "visible_by_default", false) == NULL);
+                std::string upgrade_topic = mTopicPrefix + "/" + MQTT_CLIENT_OTA_UPGRADE_ID + MQTT_CLIENT_COMMAND_TOPIC;
+                error = error || (cJSON_AddStringToObject(cmp, "command_topic", upgrade_topic.c_str()) == NULL); // command_topic
+                std::string command_template = "{\"url\": \"{{ value }}\"}";
+                error = error || (cJSON_AddStringToObject(cmp, "command_template", command_template.c_str()) == NULL); // command_template
             }
         }
         if (!error)

@@ -8,6 +8,10 @@ menu "Diagral UART Project Configuration"
         help
             Up to 32 characters. Set to empty if you don't want to protect command line access by password (unsecure).
 
+    config OTA_UPDATE_HTTPS_ONLY
+        bool "Allow OTA update only over HTTPS"
+        default y
+
     choice CONNECTIVITY_CHOOSE_LAYER
         prompt "Choose between Wifi and Ethernet"
         default CONNECTIVITY_CHOICE_WIFI

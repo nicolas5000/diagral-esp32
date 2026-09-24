@@ -25,7 +25,9 @@ To use this project in a secure way, you shall:
 - Use a secure network (Wifi password...).
 - Use a secure MQTT connection (strong password, certificate...).
 - Protect your Home Assistant access.
-- If you want the best: enable ESP32 security (flash encryption, secure boot, firmware signing...)
+- If you want the best:
+  - Sign your firmware and enable secure boot (see ESP-IDF documentation). This risk can be mitigated by using [HTTPS server for OTA update](#ota-over-https).
+  - Enable flash encryption (see ESP-IDF documentation) to protect your Wifi password, command-line password and MQTT password. This risk is mitigated by putting the ESP32 on the back of the DIAG91AGFK (protected by your alarm system tamper mechanism).
 
 ### Documentation
 This documentation contains useful information about the project, especially:
@@ -77,9 +79,7 @@ These features are currently available:
       - A switch is added to enable/disable Diagral layer logging (applied after reboot)
       - A switch is added to enable/disable Diagral passive mode (applied after reboot)
 - Configuration storage to flash
-
-These features should be available before end of 2026 depending on my available time:
-- ESP32 security features and OTA sofware update (expected October-November 2026 :calendar:, optional, enable if you want): flash encryption, secure boot, firmware signature, update over Wifi/Ethernet with rollback in case of failure
+- [OTA firmware update](#ota-update) (update from Wifi or Ethernet using an HTTP(S) server) with rollback.
 
 ### Diagral DIAG91AGFK 20-pins connector
 The DIAG91AGFK has a 20-pins connector on the back to connect the DIAG55AAX GSM module. We use this connector for our project. Please check pin numbers:
@@ -137,11 +137,12 @@ The development environment is based on:
 ### Starting guide
 
 Here are a few steps to follow to start with this project:
-1. If you are nor familiar with VSCode and ESP-IDF, I encourage you to read ESP-IDF starting guide and try the "Hello world" example on your ESP32-S3 board. You should be able to build the example, flash the binary to your ESP32-S3 board and monitor the execution from ESP-IDF monitor tool before going to next step.
+1. If you are not familiar with VSCode and ESP-IDF, I encourage you to read ESP-IDF starting guide and try the "Hello world" example on your ESP32-S3 board. You should be able to build the example, flash the binary to your ESP32-S3 board and monitor the execution from ESP-IDF monitor tool before going to next step.
 2. Download this project / clone the repository, then open the project folder in VSCode.
 3. Choose the ESP32-S3 target
 4. Open "SDK Configuration Editor" to configure the project and go to "Diagral UART Project Configuration" section. Configure network and choose the GPIO pins you want to use to connect everything. The default configuration is compatible with the ESP32-S3 board from Seeed Studio (with battery management) and the schematics above.
 5. Use wires to connect all the pins (see schematics above)
+6. Provide your HTTPS public certificate for OTA (see [OTA section](#ota-update) to generate a certificate) or create an empty file named _ca_cert.pem_
 6. Build the source code, flash it to the board and monitor (there is single button that does everything if you are confident, otherwise, use the 3 buttons in this order).
 
 By default the project is configured with verbose enabled and not in passive mode: you can see what happens with detailed logs and you can control your Diagral alarm system. In active mode you can use the command line to send commands to your Diagral system. You can use passive mode to get frames from DIAG91AGFK to DIAG55AAX only (but you have to connect all 20 pins).
@@ -157,6 +158,23 @@ In this mode you can control your alarm system.
 
 > [!NOTE]
 > - Keep verbose enabled if you want to see what happens in Diagral UART layer. In addition to console, exchanged frames can be sent to a Syslog server.
+
+### OTA update
+In order to update the firmware from Wifi or Ethernet securely, you should use an HTTPS server. If you don't mind, you can also use a simple HTTP server. This section describes the 2 options.
+
+#### OTA over HTTPS
+1. Generate your certificate and key: you can use the command `openssl req -x509 -newkey rsa:2048 -keyout ca_key.pem -out ca_cert.pem -days 365 -nodes`. Don't forget to use a CN field that matches the machine IP address or name (like _myserver.lan_) that will be used in the URL when performing OTA. Note: this file is required to build and be included within the first firmware to load using USB.
+2. Open the update port in your firewall
+3. Launch the HTTPS server. You can use the command `python3 simple_ota_https_server.py <BIN_DIR> <PORT> [CERT_DIR]` (simple_ota_https_server.py is in the tools folder)
+4. From Home Assistant, enter the URL of the .bin file: `https://myserver.lan:8070/diagral-uart-esp32.bin` assuming you are using port 8070 on machine myserver.lan
+5. Wait a few time (upgrade should be done in less than 30 seconds)
+
+#### OTA over HTTP
+1. Create an empty file named ca_cert.pem before building the firmware
+2. Open the update port in your firewall
+3. Launch the HTTP server. You can use the command `python3 -m http.server 8070 --bind ::` in the build folder containing diagral-uart-esp32.bin
+4. From Home Assistant, enter the URL of the .bin file: `http://myserver.lan:8070/diagral-uart-esp32.bin` assuming you are using port 8070 on machine myserver.lan
+5. Wait a few time (upgrade should be done in less than 30 seconds)
 
 ### How to contribute
 

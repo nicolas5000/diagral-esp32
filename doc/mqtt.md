@@ -18,6 +18,7 @@ Discovery message exposes controller description and mandatory fields required b
 - Diagral logging configuration (change is applied after reboot)
 - Diagral passive mode configuration (change is applied after reboot)
 - _Reboot_ button: this button orders an immediate soft reboot of the controller
+- _OTA Upgrade URL_ text: this input can be used to send an OTA update request by providing the URL of the .bin file
 
 Here is an example of discovery message sent to this topic:
 ```
@@ -40,6 +41,15 @@ Here is an example of discovery message sent to this topic:
 			"unique_id":	"diagral-esp32_button_reboot",
 			"name":	"Reboot",
 			"command_topic":	"diagral-esp32/button_reboot/set"
+		},
+		"upgrade":	{
+			"p":	"text",
+			"unique_id":	"diagral-esp32_ota_upgrade",
+			"name":	"OTA Upgrade URL",
+			"entity_category":	"config",
+			"visible_by_default":	false,
+			"command_topic":	"diagral-esp32/ota_upgrade/set",
+			"command_template":	"{\"url\": \"{{ value }}\"}"
 		},
 		"Logging":	{
 			"p":	"switch",

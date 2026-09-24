@@ -18,12 +18,20 @@ namespace Diagral
         /// @brief Ask to reboot ESP32
         void Reboot();
 
+        /// @brief Launch OTA firmware upgrade using provided URL to get firmware
+        /// @param url URL to the upgrade file
+        void Upgrade(std::string url);
+
+        /// @brief Called by MqttHelpers when connected to MQTT server (to validate OTA update and cancel rollback)
+        void NotifyMQTTConnected();
+
         /// @brief Retrieve current configuration about passive / active mode
         /// @return true if currently in passive mode
         bool isDiagralPassive() { return mDiagralPassive; }
 
     private:
         bool mDiagralPassive = false; // current configuration, initialized at boot
+        bool mDisableRollback = true; // will be set to false once MQTT is connected
 
         /// @brief Initialize Diagral controller member (mDiagralController)
         void InitializeDiagral();
