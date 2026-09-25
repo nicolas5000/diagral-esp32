@@ -78,6 +78,7 @@ namespace Diagral
   constexpr uint8_t SUBCMD_OTHERS_GSM_45 = 0x45;                       // Sent by GSM, unknown
   constexpr uint8_t SUBCMD_OTHERS_STATE_REJECTED = 0x49;               // Command from system, when rejected state change
   constexpr uint8_t SUBCMD_OTHERS_INCOMING_COMMUNICATION_STATE = 0x50; // Sent by GSM, incoming communication state
+  constexpr uint8_t SUBCMD_OTHERS_SYSTEM_58 = 0x58;                    // Command from system, unknown
 
   // ============================================================================
   // Constants used in commands

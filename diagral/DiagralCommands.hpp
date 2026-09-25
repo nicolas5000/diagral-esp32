@@ -14,7 +14,12 @@ namespace Diagral
         uint8_t data[FRAME_DATA_MAX_SIZE]; // Data
     };
 
-    /// @brief Create a I=07/J=91 Frame
+    /// @brief Create a I=07/J=95 Frame
+    /// @param frame response to create
+    /// @return true on success
+    bool create_J95_response(DiagralFrame &frame);
+
+    /// @brief Create a I=07/J=96 Frame
     /// @param frame response to create
     /// @return true on success
     bool create_J96_response(DiagralFrame &frame);

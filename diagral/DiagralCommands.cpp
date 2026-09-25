@@ -4,6 +4,15 @@
 
 namespace Diagral
 {
+    bool create_J95_response(DiagralFrame &frame)
+    {
+        // Create response from what we observed from GSM module
+        uint8_t data[7] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_POWER_ON_STATE, 0x81, 0x02, 0x07, 0xE3, 0x76};
+        memcpy(frame.data, data, sizeof(data));
+        frame.data_length = sizeof(data);
+        return true;
+    }
+
     bool create_J96_response(DiagralFrame &frame)
     {
         // Create response from what we observed from GSM module

@@ -472,6 +472,16 @@ namespace Diagral
               case SUBCMD_OTHERS_STATE_REJECTED:
                 DIAG_LOGE("System rejected state change!");
                 break;
+              case SUBCMD_OTHERS_SYSTEM_58:
+                // Don't know what this frame is but it requires a response, so send response.
+                {
+                  DiagralFrame response;
+                  if (!create_J95_response(response) || !TransmitFrame(response))
+                  {
+                    DIAG_LOGE("ProcessReceivedFrameTask failed to send J95 response!");
+                  }
+                  break;
+                }
               case SUBCMD_OTHERS_SETTING_CHECK_EXIST:
               case SUBCMD_OTHERS_SETTING_GET:
               case SUBCMD_OTHERS_SETTING_CHECK_VALUE:
