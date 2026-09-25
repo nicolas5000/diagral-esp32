@@ -170,7 +170,7 @@ In order to update the firmware from Wifi or Ethernet securely, you should use a
 5. Wait a few time (upgrade should be done in less than 30 seconds)
 
 #### OTA over HTTP
-1. Create an empty file named ca_cert.pem before building the firmware
+1. Create an empty file named ca_cert.pem and disable option _Allow OTA update only over HTTPS_ in the project configuration before building the firmware
 2. Open the update port in your firewall
 3. Launch the HTTP server. You can use the command `python3 -m http.server 8070 --bind ::` in the build folder containing diagral-uart-esp32.bin
 4. From Home Assistant, enter the URL of the .bin file: `http://myserver.lan:8070/diagral-uart-esp32.bin` assuming you are using port 8070 on machine myserver.lan
