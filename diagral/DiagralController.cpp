@@ -432,6 +432,10 @@ namespace Diagral
                   {
                     DIAG_LOGE("ProcessReceivedFrameTask failed to send J43 response!");
                   }
+                  if (!create_K0C_frame(response) || !TransmitFrame(response))
+                  {
+                    DIAG_LOGE("ProcessReceivedFrameTask failed to send J43 response!");
+                  }
                 }
               }
               break;
@@ -465,6 +469,9 @@ namespace Diagral
             case SUBCMD_GEN_OTHERS:
               switch (frame.data[2]) // switch on K = xx for J = 0xB0
               {
+              case SUBCMD_OTHERS_AUDIO_CONTROL_RESPONSE:
+                // it's a response to SUBCMD_OTHERS_AUDIO_CONTROL, ignore it for now.
+                break;
               case SUBCMD_OTHERS_LANGUAGE:
                 sDeviceState.language = (DiagralLanguage)frame.data[4];
                 if (!xQueueSendToBack(sDeviceStateQueue, &sDeviceState, 0))

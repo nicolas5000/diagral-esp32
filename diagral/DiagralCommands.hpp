@@ -40,6 +40,11 @@ namespace Diagral
     /// @return true on success
     bool create_K06_frame(DiagralFrame &frame);
 
+    /// @brief Create a I=07/J=B0/K=0C Frame
+    /// @param frame frame to create
+    /// @return true on success
+    bool create_K0C_frame(DiagralFrame &frame);
+
     /// @brief Create a I=07/J=B0/K=30 Frame
     /// @param frame frame to create
     /// @param byte1 byte1 to send

@@ -48,6 +48,14 @@ namespace Diagral
         return true;
     }
 
+    bool create_K0C_frame(DiagralFrame &frame)
+    {
+        uint8_t data[5] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_OTHERS, SUBCMD_OTHERS_AUDIO_CONTROL, 0x01, 0x01};
+        memcpy(frame.data, data, sizeof(data));
+        frame.data_length = sizeof(data);
+        return true;
+    }
+
     bool create_K30_frame(DiagralFrame &frame, uint8_t byte1, uint8_t byte2, uint8_t byte3)
     {
         uint8_t data[6] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_OTHERS, SUBCMD_OTHERS_GSM_30, byte1, byte2, byte3};
