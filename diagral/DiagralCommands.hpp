@@ -14,6 +14,11 @@ namespace Diagral
         uint8_t data[FRAME_DATA_MAX_SIZE]; // Data
     };
 
+    /// @brief Create a I=07/J=43 Frame
+    /// @param frame frame to create
+    /// @return true on success
+    bool create_J43_frame(DiagralFrame &frame);
+
     /// @brief Create a I=07/J=95 Frame
     /// @param frame response to create
     /// @return true on success
@@ -29,6 +34,11 @@ namespace Diagral
     /// @param idle true if system is in idle mode
     /// @return true on success
     bool create_gsm_state_response(DiagralFrame &frame, bool idle);
+
+    /// @brief Create a I=07/J=B0/K=06 Frame
+    /// @param frame frame to create
+    /// @return true on success
+    bool create_K06_frame(DiagralFrame &frame);
 
     /// @brief Create a I=07/J=B0/K=30 Frame
     /// @param frame frame to create

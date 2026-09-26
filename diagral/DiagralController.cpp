@@ -424,6 +424,14 @@ namespace Diagral
                   {
                     DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
                   }
+                  if (!create_K06_frame(response) || !TransmitFrame(response))
+                  {
+                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K06 response!");
+                  }
+                  if (!create_J43_frame(response) || !TransmitFrame(response))
+                  {
+                    DIAG_LOGE("ProcessReceivedFrameTask failed to send J43 response!");
+                  }
                 }
               }
               break;

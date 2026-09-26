@@ -4,6 +4,15 @@
 
 namespace Diagral
 {
+    bool create_J43_frame(DiagralFrame &frame)
+    {
+        // Create frame from what we observed from GSM module
+        uint8_t data[2] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_IDLE_GSM};
+        memcpy(frame.data, data, sizeof(data));
+        frame.data_length = sizeof(data);
+        return true;
+    }
+
     bool create_J95_response(DiagralFrame &frame)
     {
         // Create response from what we observed from GSM module
@@ -26,6 +35,14 @@ namespace Diagral
     {
         uint8_t data[4] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_GSM_STATE, 0x00, 0x00};
         data[2] = idle ? 0x80 : 0x00;
+        memcpy(frame.data, data, sizeof(data));
+        frame.data_length = sizeof(data);
+        return true;
+    }
+
+    bool create_K06_frame(DiagralFrame &frame)
+    {
+        uint8_t data[5] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_OTHERS, SUBCMD_OTHERS_GSM_06, 0x01, 0x01};
         memcpy(frame.data, data, sizeof(data));
         frame.data_length = sizeof(data);
         return true;
