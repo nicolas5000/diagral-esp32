@@ -24,6 +24,12 @@ namespace Diagral
     /// @return true on success
     bool create_J96_response(DiagralFrame &frame);
 
+    /// @brief Create a I=07/J=B0/K=30 Frame
+    /// @param frame response to create
+    /// @param idle true if system is in idle mode
+    /// @return true on success
+    bool create_K30_response(DiagralFrame &frame, bool idle);
+
     /// @brief Create a I=07/J=B0/K=41 Frame
     /// @param frame response to create
     /// @return true on success

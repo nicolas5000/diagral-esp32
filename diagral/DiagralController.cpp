@@ -394,6 +394,19 @@ namespace Diagral
               // Don't know what this frame is and it doesn't require response, so ignore it.
               break;
             case SUBCMD_GEN_STATE_NOTIFICATION:
+            {
+              DiagralMode oldState = sDeviceState.mode;
+              UpdateDeviceState(frame);
+              if (oldState != sDeviceState.mode) // mode changed, must send a I=07/J=B0/K=30 Frame
+              {
+                DiagralFrame response;
+                if (!create_K30_response(response, sDeviceState.mode == DIAGRAL_MODE_IDLE) || !TransmitFrame(response))
+                {
+                  DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
+                }
+              }
+              break;
+            }
             case SUBCMD_GEN_ALERT_NOTIFICATION:
             case SUBCMD_GEN_DETECTION_NOTIFICATION:
             case SUBCMD_GEN_ERROR_NOTIFICATION:
