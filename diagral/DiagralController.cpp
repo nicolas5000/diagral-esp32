@@ -397,10 +397,10 @@ namespace Diagral
             {
               DiagralMode oldState = sDeviceState.mode;
               UpdateDeviceState(frame);
-              if (oldState != sDeviceState.mode) // mode changed, must send a I=07/J=B0/K=30 Frame
+              if (oldState != sDeviceState.mode) // mode changed, must send a I=07/J=6C Frame
               {
                 DiagralFrame response;
-                if (!create_K30_response(response, sDeviceState.mode == DIAGRAL_MODE_IDLE) || !TransmitFrame(response))
+                if (!create_gsm_state_response(response, sDeviceState.mode == DIAGRAL_MODE_IDLE) || !TransmitFrame(response))
                 {
                   DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
                 }
