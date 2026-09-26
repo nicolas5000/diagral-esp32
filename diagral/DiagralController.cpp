@@ -279,6 +279,7 @@ namespace Diagral
       return false;
     }
 
+    sDeviceState.mode = DIAGRAL_MODE_SETUP;
     mInitialized = true;
 
     return true;
