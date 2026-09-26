@@ -30,6 +30,14 @@ namespace Diagral
     /// @return true on success
     bool create_gsm_state_response(DiagralFrame &frame, bool idle);
 
+    /// @brief Create a I=07/J=B0/K=30 Frame
+    /// @param frame frame to create
+    /// @param byte1 byte1 to send
+    /// @param byte2 byte2 to send
+    /// @param byte3 byte3 to send
+    /// @return true on success
+    bool create_K30_frame(DiagralFrame &frame, uint8_t byte1, uint8_t byte2, uint8_t byte3);
+
     /// @brief Create a I=07/J=B0/K=41 Frame
     /// @param frame response to create
     /// @return true on success

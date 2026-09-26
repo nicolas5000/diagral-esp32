@@ -405,6 +405,26 @@ namespace Diagral
                 {
                   DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
                 }
+                if (sDeviceState.mode == DIAGRAL_MODE_IDLE)
+                {
+                  // Going to idle mode, we send all these frames observed on a real GSM module
+                  if (!create_K30_frame(response, 0x00, 0x00, 0x05) || !TransmitFrame(response))
+                  {
+                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
+                  }
+                  if (!create_K30_frame(response, 0x04, 0x13, 0xA9) || !TransmitFrame(response))
+                  {
+                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
+                  }
+                  if (!create_K30_frame(response, 0x05, 0x05, 0xA0) || !TransmitFrame(response))
+                  {
+                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
+                  }
+                  if (!create_K30_frame(response, 0x07, 0x00, 0x3C) || !TransmitFrame(response))
+                  {
+                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
+                  }
+                }
               }
               break;
             }
@@ -487,15 +507,8 @@ namespace Diagral
                 DIAG_LOGE("System rejected state change!");
                 break;
               case SUBCMD_OTHERS_SYSTEM_58:
-                // Don't know what this frame is but it requires a response, so send response.
-                {
-                  DiagralFrame response;
-                  if (!create_J95_response(response) || !TransmitFrame(response))
-                  {
-                    DIAG_LOGE("ProcessReceivedFrameTask failed to send J95 response!");
-                  }
-                  break;
-                }
+                // Don't know what this frame is and it doesn't require response (real GSM module doesn't reply after ACK), so ignore it.
+                break;
               case SUBCMD_OTHERS_SETTING_CHECK_EXIST:
               case SUBCMD_OTHERS_SETTING_GET:
               case SUBCMD_OTHERS_SETTING_CHECK_VALUE:
