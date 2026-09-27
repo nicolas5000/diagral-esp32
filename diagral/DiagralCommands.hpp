@@ -47,8 +47,9 @@ namespace Diagral
 
     /// @brief Create a I=07/J=B0/K=11 Frame
     /// @param frame frame to create
+    /// @param second_payload fill the frame with second known payload
     /// @return true on success
-    bool create_K11_frame(DiagralFrame &frame);
+    bool create_K11_frame(DiagralFrame &frame, bool second_payload);
 
     /// @brief Create a I=07/J=B0/K=30 Frame
     /// @param frame frame to create

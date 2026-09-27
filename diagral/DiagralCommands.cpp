@@ -56,11 +56,20 @@ namespace Diagral
         return true;
     }
 
-    bool create_K11_frame(DiagralFrame &frame)
+    bool create_K11_frame(DiagralFrame &frame, bool second_payload)
     {
-        uint8_t data[10] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_OTHERS, SUBCMD_OTHERS_GSM_11, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x02};
-        memcpy(frame.data, data, sizeof(data));
-        frame.data_length = sizeof(data);
+        if (second_payload)
+        {
+            uint8_t data[10] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_OTHERS, SUBCMD_OTHERS_GSM_11, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00};
+            memcpy(frame.data, data, sizeof(data));
+            frame.data_length = sizeof(data);
+        }
+        else
+        {
+            uint8_t data[10] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_OTHERS, SUBCMD_OTHERS_GSM_11, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x02};
+            memcpy(frame.data, data, sizeof(data));
+            frame.data_length = sizeof(data);
+        }
         return true;
     }
 
@@ -177,8 +186,9 @@ namespace Diagral
         const char *code = pinCode.c_str();
         for (int8_t i = 0; i < pinCode.length(); i++)
         {
-            if (code[i] < '0' || code[i] > '9') return false;
-            data[3 + i / 2] = data[3 + i / 2] | ((code[i] - '0') << (( i % 2 == 0) ? 4 : 0));
+            if (code[i] < '0' || code[i] > '9')
+                return false;
+            data[3 + i / 2] = data[3 + i / 2] | ((code[i] - '0') << ((i % 2 == 0) ? 4 : 0));
         }
         // Prepare DiagralFrame
         memcpy(frame.data, data, sizeof(data));

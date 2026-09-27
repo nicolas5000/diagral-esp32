@@ -434,7 +434,7 @@ namespace Diagral
                   }
                   if (!create_K0C_frame(response) || !TransmitFrame(response))
                   {
-                    DIAG_LOGE("ProcessReceivedFrameTask failed to send J43 response!");
+                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K0C response!");
                   }
                 }
               }
@@ -483,7 +483,11 @@ namespace Diagral
                 // Don't know what this frame is, observed a few times, try to reply with K11.
                 {
                   DiagralFrame response;
-                  if (!create_K11_frame(response) || !TransmitFrame(response))
+                  if (!create_K11_frame(response, false) || !TransmitFrame(response))
+                  {
+                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K11 response!");
+                  }
+                  if (!create_K11_frame(response, true) || !TransmitFrame(response))
                   {
                     DIAG_LOGE("ProcessReceivedFrameTask failed to send K11 response!");
                   }
