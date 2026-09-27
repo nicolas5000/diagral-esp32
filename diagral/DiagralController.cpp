@@ -480,8 +480,15 @@ namespace Diagral
                 }
                 break;
               case SUBCMD_OTHERS_SYSTEM_31:
-                // Don't know what this frame is and it doesn't require response, so ignore it.
-                break;
+                // Don't know what this frame is, observed a few times, try to reply with K11.
+                {
+                  DiagralFrame response;
+                  if (!create_K11_frame(response) || !TransmitFrame(response))
+                  {
+                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K11 response!");
+                  }
+                  break;
+                }
               case SUBCMD_OTHERS_SYSTEM_40:
                 // Don't know what this frame is but it requires a response, so send response.
                 {
