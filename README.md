@@ -41,7 +41,7 @@ This documentation contains useful information about the project, especially:
 ### Support
 I try to give support on my free time. If you have questions you can open a subject and ask directly in English (for everyone to understand) or in French.
 
-### Current status and coming features
+### Project status
 
 These features are currently available:
 - Get state from Diagral alarm system:
@@ -117,16 +117,29 @@ Here is the pin description for the connector:
 ### Hardware requirements
 ![image](/doc/Diagral_ESP32_Schema.png)
 In order to use this project, you will need:
-- ESP32-S3 board: I recommand to use a board with battery management already integrated like Seeed Studio ESP32-S3 if your alarm system is not powered by a UPS.
+- ESP32-S3 board: I recommand to use a board with battery management already integrated like [Seeed Studio XIAO-ESP32-S3](https://www.amazon.fr/dp/B0BYSB66S5/) if your alarm system is not powered by a UPS.
 - 5 or 6 resistors (see the schematics):
   - R1 and R2 are required only if you want to monitor battery voltage. You can choose any values but the voltage on the GPIO shall always remains under 3.3V! I chose to use the same resistors but it's not mandatory. You can modify min (0%) and max (100%) voltage values in the configuration.
   - R3 and R4 are always required as they permit to convert the voltage level between Diagral (2.8V) and ESP32 (3.3V) for "Signal" pin.
   - R5 and R6 are always required as they permit to convert the voltage level between Diagral (2.8V) and ESP32 (3.3V) for "ESP32 TX" pin. Please note that in my case R6 is not needed as the ESP32-S3 board from Seeed Studio already have a 499 ohm resistor internally.
+- [XL74610](https://www.amazon.fr/dp/B0H2HY1DP9/) "ideal diode" if you plan to charge the battery from the DIAG91AGFK 5V power supply (in fact the DIAG91AGFK provides 4.5V and it is required to use at least 4.257V to fully charge a battery like 18650 that is 4.2V at 100%, so normal diode can't be used)
 - Wires to connect everything to the ESP32 board
 - USB cable to connect the ESP32 board to your computer
 - Battery (like 18650 battery, I didn't try to reuse the battery provided with the DIAG55AAX module but it could work)
-- W5500 Ethernet module if you don't want to use Wifi
+- [W5500](https://www.amazon.fr/dp/B0B775X737/) Ethernet module if you don't want to use Wifi
 - 20 pins connector to connect to DIAG91AGFK if you don't want to use "Dupont" wires on your final project board.
+
+### PCB
+I have created a [kicad](./kicad/) project for schematics and PCB routing.
+You can directly purchase a PCB (minimum order of 5 units) from PCBWay using this [link](https://www.pcbway.com/project/shareproject/diagral_esp32_gerber_d70e3251.html). 
+> [!NOTE]
+> I have a few PCB available from my previous orders, 4 PCB don't have Ethernet working due to W5500 footprint error (so only Wifi can be used) and 3 PCB have Ethernet working (they can use Wifi or Ethernet). I also have a few XL74610 boards available. So I can provide PCB + XL74610 for about 5€ excluding packaging and shipping costs from France (probably about 10€ with packaging and shipping costs to France).
+
+![image](doc/PCB_front.jpg) ![image](doc/PCB_back.jpg) ![image](doc/PCB_mounted.jpg)
+
+> [!CAUTION]
+> Please note that mounting the W5500 module to use the Ethernet link will require to cut the back of the DIAG91AGFK because the W5500 is too big as you can see:
+![image](/doc/W5500_mechanical_modification.jpg)
 
 ### Development environment
 
