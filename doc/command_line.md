@@ -69,18 +69,18 @@ config_network  [-rd] [--hostname=<hostname>] [--dhcp=<dhcp>] [--ip=<address>] [
 
 ### Configure MQTT client
 ```
-config_mqtt  [-rd] [--state=<state>] [--addr=<address>] [--port=<port>] [--id=<client_id>] [--user=<username>] [--pass=<password>] [--tls=<tls_state>] [--cert=<certificate>] [--topic=<topic_prefix>] [--discovery=<discovery_prefix>]
+config_mqtt  [-rd] [--state=<state>] [--addr=<address>] [--port=<port>] [--user=<username>] [--pass=<password>] [--tls=<tls_state>] [--cert=<certificate>] [--disc_id=<discovery_id>] [--topic=<topic_prefix>] [--discovery=<discovery_prefix>]
   Configure MQTT (changes are applied after reboot)
     -r, --read  Read current configuration from storage (no other argument required)
   -d, --delete  Delete current configuration in storage (no other argument required)
   --state=<state>  1 to enable MQTT client, 0 to disable
   --addr=<address>  Broker address to connect to
   --port=<port>  Broker port to connect to
-  --id=<client_id>  Client unique ID when connecting to MQTT broker
   --user=<username>  Client username when connecting to MQTT broker
   --pass=<password>  Client password when connecting to MQTT broker
   --tls=<tls_state>  1 to enable TLS connection to MQTT broker, 0 to disable
   --cert=<certificate>  MQTT broker certificate (content of .pem file without --- BEGIN CERTIFICATE --- and ---END CERTIFICATE ---)
+  --disc_id=<discovery_id>  ID and Name to use in discovery message
   --topic=<topic_prefix>  Prefix added before all MQTT topics except discovery
   --discovery=<discovery_prefix>  Prefix added before discovery topic. Discovery topic will be <discovery_prefix>/config
 ```
