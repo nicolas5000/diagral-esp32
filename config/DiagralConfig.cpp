@@ -55,7 +55,8 @@ namespace Config
 #else
         uint8_t is_enabled = false;
 #endif
-        return NvsHelpers::GetValue(DIAGRAL_CONFIG_NAMESPACE, DIAGRAL_CONFIG_PIN_CODE, is_enabled);
+        NvsHelpers::GetValue(DIAGRAL_CONFIG_NAMESPACE, DIAGRAL_CONFIG_PIN_CODE, is_enabled);
+        return is_enabled;
     }
     esp_err_t DiagralConfig::ActivatePinCodeCheck(bool pinCodeCheckEnabled)
     {
