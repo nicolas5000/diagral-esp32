@@ -189,6 +189,15 @@ In order to update the firmware from Wifi or Ethernet securely, you should use a
 4. From Home Assistant, enter the URL of the .bin file: `http://myserver.lan:8070/diagral-uart-esp32.bin` assuming you are using port 8070 on machine myserver.lan
 5. Wait a few time (upgrade should be done in less than 30 seconds)
 
+### Home Assistant integration
+The board will be automatically discovered by Home Assistant MQTT integration and provide controls (with control panel for all zones and for each zone), PIN code verification (if enabled in the configuration), events (detection, alert, error), diagnostics and OTA firmware update.
+![image](/doc/HA_controls.png)
+![image](/doc/HA_control_panel.png)
+![image](/doc/HA_pincode.png)
+![image](/doc/HA_events.png)
+![image](/doc/HA_diagnostics.png)
+![image](/doc/HA_OTA.png)
+
 ### How to contribute
 
 You can mainly contribute to this project by:
