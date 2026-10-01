@@ -695,7 +695,7 @@ namespace Helpers
                 error = error || (cJSON_AddStringToObject(cmp, "name", "Control panel") == NULL);        // name
                 std::string command_topic = mTopicPrefix + MQTT_CLIENT_CONTROL_PANEL_TOPIC + MQTT_CLIENT_COMMAND_TOPIC;
                 error = error || (cJSON_AddStringToObject(cmp, "command_topic", command_topic.c_str()) == NULL); // command_topic
-                std::string command_template = "{\"" + MQTT_CLIENT_CONTROL_PANEL_ACTION_ID + "\": \"{{ action }}\", \"" + MQTT_CLIENT_CONTROL_PANEL_CODE_ID + "\": \"{{ code }}\", \"" + MQTT_CLIENT_CONTROL_PANEL_ZONES_ID + "\": 15 }";
+                std::string command_template = "{\"" + MQTT_CLIENT_CONTROL_PANEL_ACTION_ID + "\": \"{{ action }}\", \"" + MQTT_CLIENT_CONTROL_PANEL_CODE_ID + "\": \"{{ code }}\", \"" + MQTT_CLIENT_CONTROL_PANEL_ZONES_ID + "\": 255 }";
                 error = error || (cJSON_AddStringToObject(cmp, "command_template", command_template.c_str()) == NULL); // command_template
                 std::string state_topic = mTopicPrefix + MQTT_CLIENT_CONTROL_PANEL_TOPIC + MQTT_CLIENT_STATE_TOPIC;
                 error = error || (cJSON_AddStringToObject(cmp, "state_topic", state_topic.c_str()) == NULL);       // state_topic

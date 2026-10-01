@@ -114,7 +114,7 @@ namespace Diagral
         uint8_t data[14];
         memset(data, 0, sizeof(data));
         data[0] = CMD_BINARY_MANAGEMENT;
-        data[1] = 0x02;
+        data[1] = 0x20;
         data[2] = SUBCMD_BINARY_DESCRIPTION_COMMAND;
         memcpy(data + 3, requestFrame.data + 3, 6);
         // data[9] = 0x00;
