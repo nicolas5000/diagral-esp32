@@ -235,7 +235,7 @@ The known error types are:
 The known hardware types are:
 | Value | Hardware |
 |----|----|
-| 0x14 | Alarm system |
+| 0x10 or 0x14 | Alarm system |
 | 0x20 | Command module |
 | 0x30 or 0x31 | Sensor |
 | 0x40 | Siren |

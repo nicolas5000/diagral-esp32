@@ -1048,6 +1048,11 @@ namespace Diagral
       {
         sDeviceState.lastError.errorType = statusFrame.data[3] == 0x00 ? DiagralErrorType::DIAGRAL_ERROR_BATTERY_RESTORED : DiagralErrorType::DIAGRAL_ERROR_BATTERY_LOW;
       }
+      else
+      {
+        DIAG_LOGE("UpdateDeviceState: unknown error type for J=0x{:02X}!", statusFrame.data[1]);
+        return;
+      }
       // Hardware type
       if (statusFrame.data[5] == 0x40)
       {
@@ -1061,9 +1066,14 @@ namespace Diagral
       {
         sDeviceState.lastError.hardwareType = DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_COMMAND;
       }
-      else if (statusFrame.data[5] == 0x14)
+      else if (statusFrame.data[5] == 0x10 || statusFrame.data[5] == 0x14)
       {
         sDeviceState.lastError.hardwareType = DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_SYSTEM;
+      }
+      else
+      {
+        DIAG_LOGE("UpdateDeviceState: unknown hardware type for J=0x{:02X}!", statusFrame.data[1]);
+        return;
       }
       sDeviceState.lastError.hardwareNumber = statusFrame.data[7];
       time(&sDeviceState.lastError.timestamp);
