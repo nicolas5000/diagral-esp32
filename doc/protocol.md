@@ -323,6 +323,14 @@ This notification is sent by the alarm system to report its language.
 | 4 | K = 0x10 |
 | 5 | Not interpreted by this project |
 | 6 | Language code: 0x00 = French, 0x01 = Italian, 0x02 = German, 0x03 = Spanish, 0x04 = Dutch, 0x05 = English |
+###### K=0x28 - Command validation response
+This frame is sent by the alarm system or by the GSM module in response to some commands to be validated.
+| Byte # | Description |
+|----|---|
+| 2 | I = 0x07 |
+| 3 | J = 0xB0 |
+| 4 | K = 0x28 |
+| 5 | status: 0x00 = unknown parameter, 0x01 = OK, 0x02 = error |
 ###### K=0x40 - Unknown from alarm system
 This frame is sent by the alarm system during initialization. Its payload is not interpreted by this project, but the frame requires a response from the GSM module.
 | Byte # | Description |
