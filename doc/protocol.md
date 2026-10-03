@@ -241,6 +241,14 @@ The known hardware types are:
 | 0x40 | Siren |
 
 The ESP32 records the error state, hardware type, hardware number, and reception time. Main power events are reported separately with [K=0x42](#k0x42---alarm-system-power-notification).
+##### J=0x6C - State change ack
+This frame is sent by the GSM module when when the alarm system mode changes (in response to [J=0x62](#j0x62---status-notification-from-the-alarm-system)). The payload contains 6 data bytes, so byte 0 (L) is 0x06.
+| Byte # | Description |
+|----|---|
+| 2 | I = 0x07 |
+| 3 | J = 0x6C |
+| 4 | 0x80 if alarm system in idle mode, 0x00 otherwise |
+| 5 | 0x00 Unknown |
 ##### J=0x71 - PIN code management
 This command family is used to read the configured PIN length and check a PIN code before sending a state-changing command.
 ###### K=0x09 - Request for PIN code length

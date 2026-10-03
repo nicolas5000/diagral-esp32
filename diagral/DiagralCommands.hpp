@@ -14,16 +14,6 @@ namespace Diagral
         uint8_t data[FRAME_DATA_MAX_SIZE]; // Data
     };
 
-    /// @brief Create a I=07/J=43 Frame
-    /// @param frame frame to create
-    /// @return true on success
-    bool create_J43_frame(DiagralFrame &frame);
-
-    /// @brief Create a I=07/J=95 Frame
-    /// @param frame response to create
-    /// @return true on success
-    bool create_J95_response(DiagralFrame &frame);
-
     /// @brief Create a I=07/J=96 Frame
     /// @param frame response to create
     /// @return true on success
@@ -34,30 +24,6 @@ namespace Diagral
     /// @param idle true if system is in idle mode
     /// @return true on success
     bool create_gsm_state_response(DiagralFrame &frame, bool idle);
-
-    /// @brief Create a I=07/J=B0/K=06 Frame
-    /// @param frame frame to create
-    /// @return true on success
-    bool create_K06_frame(DiagralFrame &frame);
-
-    /// @brief Create a I=07/J=B0/K=0C Frame
-    /// @param frame frame to create
-    /// @return true on success
-    bool create_K0C_frame(DiagralFrame &frame);
-
-    /// @brief Create a I=07/J=B0/K=11 Frame
-    /// @param frame frame to create
-    /// @param second_payload fill the frame with second known payload
-    /// @return true on success
-    bool create_K11_frame(DiagralFrame &frame, bool second_payload);
-
-    /// @brief Create a I=07/J=B0/K=30 Frame
-    /// @param frame frame to create
-    /// @param byte1 byte1 to send
-    /// @param byte2 byte2 to send
-    /// @param byte3 byte3 to send
-    /// @return true on success
-    bool create_K30_frame(DiagralFrame &frame, uint8_t byte1, uint8_t byte2, uint8_t byte3);
 
     /// @brief Create a I=07/J=B0/K=41 Frame
     /// @param frame response to create

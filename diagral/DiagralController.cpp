@@ -403,39 +403,7 @@ namespace Diagral
                 DiagralFrame response;
                 if (!create_gsm_state_response(response, sDeviceState.mode == DIAGRAL_MODE_IDLE) || !TransmitFrame(response))
                 {
-                  DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
-                }
-                if (sDeviceState.mode == DIAGRAL_MODE_IDLE)
-                {
-                  // Going to idle mode, we send all these frames observed on a real GSM module
-                  if (!create_K30_frame(response, 0x00, 0x00, 0x05) || !TransmitFrame(response))
-                  {
-                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
-                  }
-                  if (!create_K30_frame(response, 0x04, 0x13, 0xA9) || !TransmitFrame(response))
-                  {
-                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
-                  }
-                  if (!create_K30_frame(response, 0x05, 0x05, 0xA0) || !TransmitFrame(response))
-                  {
-                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
-                  }
-                  if (!create_K30_frame(response, 0x07, 0x00, 0x3C) || !TransmitFrame(response))
-                  {
-                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K30 response!");
-                  }
-                  if (!create_K06_frame(response) || !TransmitFrame(response))
-                  {
-                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K06 response!");
-                  }
-                  if (!create_J43_frame(response) || !TransmitFrame(response))
-                  {
-                    DIAG_LOGE("ProcessReceivedFrameTask failed to send J43 response!");
-                  }
-                  if (!create_K0C_frame(response) || !TransmitFrame(response))
-                  {
-                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K0C response!");
-                  }
+                  DIAG_LOGE("ProcessReceivedFrameTask failed to send J6C response!");
                 }
               }
               break;
@@ -480,19 +448,8 @@ namespace Diagral
                 }
                 break;
               case SUBCMD_OTHERS_SYSTEM_31:
-                // Don't know what this frame is, observed a few times, try to reply with K11.
-                {
-                  DiagralFrame response;
-                  if (!create_K11_frame(response, false) || !TransmitFrame(response))
-                  {
-                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K11 response!");
-                  }
-                  if (!create_K11_frame(response, true) || !TransmitFrame(response))
-                  {
-                    DIAG_LOGE("ProcessReceivedFrameTask failed to send K11 response!");
-                  }
-                  break;
-                }
+                // Don't know what this frame is and it doesn't require response (real GSM module doesn't reply after ACK), so ignore it.
+                break;
               case SUBCMD_OTHERS_SYSTEM_40:
                 // Don't know what this frame is but it requires a response, so send response.
                 {

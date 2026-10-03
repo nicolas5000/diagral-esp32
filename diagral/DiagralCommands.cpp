@@ -4,23 +4,6 @@
 
 namespace Diagral
 {
-    bool create_J43_frame(DiagralFrame &frame)
-    {
-        // Create frame from what we observed from GSM module
-        uint8_t data[2] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_IDLE_GSM};
-        memcpy(frame.data, data, sizeof(data));
-        frame.data_length = sizeof(data);
-        return true;
-    }
-
-    bool create_J95_response(DiagralFrame &frame)
-    {
-        // Create response from what we observed from GSM module
-        uint8_t data[7] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_POWER_ON_STATE, 0x81, 0x02, 0x0A, 0x26, 0x6E};
-        memcpy(frame.data, data, sizeof(data));
-        frame.data_length = sizeof(data);
-        return true;
-    }
 
     bool create_J96_response(DiagralFrame &frame)
     {
@@ -35,47 +18,6 @@ namespace Diagral
     {
         uint8_t data[4] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_GSM_STATE, 0x00, 0x00};
         data[2] = idle ? 0x80 : 0x00;
-        memcpy(frame.data, data, sizeof(data));
-        frame.data_length = sizeof(data);
-        return true;
-    }
-
-    bool create_K06_frame(DiagralFrame &frame)
-    {
-        uint8_t data[5] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_OTHERS, SUBCMD_OTHERS_GSM_06, 0x01, 0x01};
-        memcpy(frame.data, data, sizeof(data));
-        frame.data_length = sizeof(data);
-        return true;
-    }
-
-    bool create_K0C_frame(DiagralFrame &frame)
-    {
-        uint8_t data[5] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_OTHERS, SUBCMD_OTHERS_AUDIO_CONTROL, 0x01, 0x01};
-        memcpy(frame.data, data, sizeof(data));
-        frame.data_length = sizeof(data);
-        return true;
-    }
-
-    bool create_K11_frame(DiagralFrame &frame, bool second_payload)
-    {
-        if (second_payload)
-        {
-            uint8_t data[10] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_OTHERS, SUBCMD_OTHERS_GSM_11, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00};
-            memcpy(frame.data, data, sizeof(data));
-            frame.data_length = sizeof(data);
-        }
-        else
-        {
-            uint8_t data[10] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_OTHERS, SUBCMD_OTHERS_GSM_11, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x02};
-            memcpy(frame.data, data, sizeof(data));
-            frame.data_length = sizeof(data);
-        }
-        return true;
-    }
-
-    bool create_K30_frame(DiagralFrame &frame, uint8_t byte1, uint8_t byte2, uint8_t byte3)
-    {
-        uint8_t data[6] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_OTHERS, SUBCMD_OTHERS_GSM_30, byte1, byte2, byte3};
         memcpy(frame.data, data, sizeof(data));
         frame.data_length = sizeof(data);
         return true;
