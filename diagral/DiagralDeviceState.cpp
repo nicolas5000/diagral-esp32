@@ -44,6 +44,8 @@ namespace Diagral
             return "fire";
         case DiagralAlertType::DIAGRAL_ALERT_SILENT:
             return "silent";
+        case DiagralAlertType::DIAGRAL_ALERT_DURESS_DISARM:
+            return "duress_disarm";
         default:
             return "unknown";
         }

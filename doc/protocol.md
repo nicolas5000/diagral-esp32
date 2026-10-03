@@ -176,7 +176,7 @@ This notification is sent by the alarm system when an alert is triggered. The pa
 | 2 | I = 0x07 |
 | 3 | J = 0x65 |
 | 4 | Not interpreted by this project |
-| 5 | Alert type: 0x40 = fire, 0x50 = alert, 0x51 = silent alert |
+| 5 | Alert type: 0x40 = fire, 0x50 = alert, 0x51 = silent alert, 0x53 = duress disarm alert |
 | 6-8 | Not interpreted by this project |
 | 9 | Number of the command that triggered the alert |
 | 10+ | Not interpreted by this project |

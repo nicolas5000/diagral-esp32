@@ -900,6 +900,7 @@ namespace Helpers
                     cJSON_AddItemToArray(events, cJSON_CreateString("alert"));
                     cJSON_AddItemToArray(events, cJSON_CreateString("fire"));
                     cJSON_AddItemToArray(events, cJSON_CreateString("silent"));
+                    cJSON_AddItemToArray(events, cJSON_CreateString("duress_disarm"));
                 }
                 else
                     error = true;

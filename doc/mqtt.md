@@ -174,7 +174,7 @@ Here is an example of discovery message sent to this topic:
 			"p":	"event",
 			"unique_id":	"diagral-esp32_last_alert",
 			"name":	"Last alert",
-			"event_types":	["alert", "fire", "silent"],
+			"event_types":	["alert", "fire", "silent", "duress_disarm"],
 			"state_topic":	"diagral-esp32/last_alert"
 		},
 		"last_error":	{

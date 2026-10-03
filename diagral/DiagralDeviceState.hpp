@@ -36,7 +36,8 @@ namespace Diagral
     {
         DIAGRAL_ALERT_FIRE = 0x40,
         DIAGRAL_ALERT = 0x50,
-        DIAGRAL_ALERT_SILENT = 0x51
+        DIAGRAL_ALERT_SILENT = 0x51,
+        DIAGRAL_ALERT_DURESS_DISARM = 0x53
     };
     enum DiagralErrorType
     {
