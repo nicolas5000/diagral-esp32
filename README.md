@@ -3,7 +3,7 @@ This project permits to connect to Diagral alarm system DIAG91AGFK using the 20 
 
 It permits to get status from and modify state of the alarm system as it could be done using call and SMS with official DIAG55AAX from Diagral, but using local MQTT connection... and it is directly recognized by Home Assistant!
 
-This project is tested on ESP32-S3 hardware and based on ESP-IDF SDK version 6.0.2. I have also tested it on a ESP32-C6 board (but without battery management so I don't use the ESP32-C6 version in my "production" system).
+This project is originally tested on XIAO-ESP32-S3 (with battery management by ESP32 board) and Waveshare ESP32-C6 (with battery management by the Diagral alarm system) hardware and based on ESP-IDF SDK version 6.0.2. It should also work with any other board compatible with Waveshare ESP32-S3 and ESP32-C6 board pinout.
 
 This project is open source: you can reuse it and modify it, but please add a link to my project.
 If you like this project you can [contribute](#how-to-contribute) or [buy me a coffee](https://buymeacoffee.com/nicolas5000) to support the tens of hours I spent on it :blush:.
@@ -50,16 +50,16 @@ These features are currently available:
   - Battery charging state. Note: it works only if you have a battery connected to provide power to the device!
 - Control the alarm system: Arm/"Arm home"/Disarm with or withour PIN code (choose before building firmware or from command line), can't be modified from MQTT and Home Assistant.
 - Events:
-  - Error event: event type (tamper, mani power, battery, radio link), harware type (system, sensor, command, siren), hardware number
+  - Error event: event type (tamper, main power, battery, radio link), harware type (system, sensor, command, siren), hardware number
   - Detection event: event type, sensor type, sensor number
-  - Alert event: alert type, command number
+  - Alert event: alert type (fire, alert, silent alert, duress disarm), command number
 - Control the ESP32:
   - Reboot
   - Enable/disable logging
   - Enable/disable passive mode
 - Connectivity:
   - Wifi (integrated to ESP32 chip) support
-  - Ethernet support (based on W5500 module)
+  - Ethernet support (based on W5500/WIZ850io module)
   - DHCP support, with DNS provided by DHCP server
   - Static IPv4 support, including manual DNS server configuration
 - (S)NTP support for time synchronization (required to have valid timestamps in MQTT messages)
@@ -103,43 +103,74 @@ Here is the pin description for the connector:
 | 13 | GND | Yes (at least once) |
 | 14 | GND | Yes (at least once) |
 | 15 | GND | Yes (at least once) |
-| 16 | 5V from DIAG91AGFK | Yes (at least once) |
-| 17 | +BATT from the project | Yes (at least once. If not using battery, connect to 5V on pin 16 or 18) |
-| 18 | 5V from DIAG91AGFK | Yes (at least once) |
-| 19 | +BATT from the project | (at least once. If not using battery, connect to 5V on pin 16 or 18) |
-| 20 | +BATT from the project | (at least once. If not using battery, connect to 5V on pin 16 or 18) |
+| 16 | Power from DIAG91AGFK | Yes (at least once) |
+| 17 | +BATT from the project | Yes (at least once. If not using battery, use a 1N5819 to connect power from pin 16 or 18 to this pin) |
+| 18 | Power from DIAG91AGFK | Yes (at least once) |
+| 19 | +BATT from the project | Yes (at least once. If not using battery, use a 1N5819 to connect power from pin 16 or 18 to this pin) |
+| 20 | +BATT from the project | Yes (at least once. If not using battery, use a 1N5819 to connect power from pin 16 or 18 to this pin) |
 
 > [!NOTE]
 > - It is not required to connect all GND pins as they are already connected together on DIAG91AGFK side. Connect your project board to at least 1 GND pin.
-> - It is not required to connect all 5V pins as they are already connected together on DIAG91AGFK side. Connect your project board to at least 1 GND pin.
-> - It is not required to connect all +BATT pins as they are already connected together on DIAG91AGFK side. Connect your project board to at least 1 GND pin.
+> - It is not required to connect all Power pins as they are already connected together on DIAG91AGFK side. Connect your project board to at least 1 power pin.
+> - It is not required to connect all +BATT pins as they are already connected together on DIAG91AGFK side. Connect your project board to at least 1 +BATT pin.
 
 ### Hardware requirements
 ![image](/doc/Diagral_ESP32_Schema.png)
 In order to use this project, you will need:
-- ESP32-S3 board: I recommand to use a board with battery management already integrated like [Seeed Studio XIAO-ESP32-S3](https://www.amazon.fr/dp/B0BYSB66S5/) if your alarm system is not powered by a UPS.
+- ESP32 board:
+  - For PCB "beta" and 1.0, use [Seeed Studio XIAO-ESP32-S3](https://www.amazon.fr/dp/B0BYSB66S5/).
+  - For PCB 1.1, use Waveshare ESP32-C6 or ESP32-S3 (or from other provider, but with equivalent pinout).
 - 5 or 6 resistors (see the schematics):
   - R1 and R2 are required only if you want to monitor battery voltage. You can choose any values but the voltage on the GPIO shall always remains under 3.3V! I chose to use the same resistors but it's not mandatory. You can modify min (0%) and max (100%) voltage values in the configuration.
   - R3 and R4 are always required as they permit to convert the voltage level between Diagral (2.8V) and ESP32 (3.3V) for "Signal" pin.
-  - R5 and R6 are always required as they permit to convert the voltage level between Diagral (2.8V) and ESP32 (3.3V) for "ESP32 TX" pin. Please note that in my case R6 is not needed as the ESP32-S3 board from Seeed Studio already have a 499 ohm resistor internally.
-- [XL74610](https://www.amazon.fr/dp/B0H2HY1DP9/) "ideal diode" if you plan to charge the battery from the DIAG91AGFK 5V power supply (in fact the DIAG91AGFK provides 4.5V and it is required to use at least 4.257V to fully charge a battery like 18650 that is 4.2V at 100%, so normal diode can't be used)
-- Wires to connect everything to the ESP32 board
-- USB cable to connect the ESP32 board to your computer
-- Battery (like 18650 battery, I didn't try to reuse the battery provided with the DIAG55AAX module but it could work)
-- [W5500](https://www.amazon.fr/dp/B0B775X737/) Ethernet module if you don't want to use Wifi
+  - R5 and R6 are always required as they permit to convert the voltage level between Diagral (2.8V) and ESP32 (3.3V) for "ESP32 TX" pin. Please note that in my case R6 is not needed as the ESP32-S3 board from Seeed Studio and Waveshare already have a 499 ohm resistor internally.
+- For PCB "beta" and 1.0, [XL74610](https://www.amazon.fr/dp/B0H2HY1DP9/) "ideal diode" if you plan to charge the battery from the DIAG91AGFK 5V power supply (in fact the DIAG91AGFK provides 4.5V and it is required to use at least 4.257V to fully charge a battery like 18650 that is 4.2V at 100%, so normal diode can't be used)
+- 1 (PCB "beta" and 1.0) or 2 (PCB 1.1) 1N5819 diode(s).
+- Wires:
+  - To connect everything to the ESP32 board if you don't use a PCB.
+  - To Replace R6 0 ohm resistor
+  - On PCB "beta" and 1.0 only, to connect battery pins to XIAO back.
+- USB cable to connect the ESP32 board to your computer for first flashing of the firmware.
+- Battery (like 18650 battery, I didn't try to reuse the battery provided with the DIAG55AAX module but it could work) and its connector.
+- [W5500](https://www.amazon.fr/dp/B0B775X737/) Ethernet module only if you don't want to use Wifi
 - 20 pins connector to connect to DIAG91AGFK if you don't want to use "Dupont" wires on your final project board.
 
 ### PCB
-I have created a [kicad](./kicad/) project for schematics and PCB routing.
-You can directly purchase a PCB (minimum order of 5 units) from PCBWay using this [link](https://www.pcbway.com/project/shareproject/diagral_esp32_gerber_d70e3251.html). 
-> [!NOTE]
-> I have a few PCB available from my previous orders, 4 PCB don't have Ethernet working due to W5500 footprint error (so only Wifi can be used) and 3 PCB have Ethernet working (they can use Wifi or Ethernet). I also have a few XL74610 boards available. So I can provide PCB + XL74610 for about 5€ excluding packaging and shipping costs from France (probably about 10€ with packaging and shipping costs to France).
-
-![image](doc/PCB_front.jpg) ![image](doc/PCB_back.jpg) ![image](doc/PCB_mounted.jpg)
+I have created a [kicad](./kicad/) project for schematics and PCB routing. Current version of the PCB is 1.1.  
+You can directly purchase a PCB (minimum order of 5 units) from PCBWay using this [link](https://www.pcbway.com/project/shareproject/diagral_esp32_gerber_d70e3251.html) or ask me for available PCB and passive components (I don't provide ESP32, W5500 and battery and I don't solder the components). 
+![image](doc/PCB_front.png)![image](doc/PCB_back.png)
 
 > [!CAUTION]
 > Please note that mounting the W5500 module to use the Ethernet link will require to cut the back of the DIAG91AGFK because the W5500 is too big as you can see:
 ![image](/doc/W5500_mechanical_modification.jpg)
+#### PCB versions
+
+| PCB # | ESP32 compatibility | Limitations |
+|----|---|---|
+| beta | [Seeed Studio XIAO-ESP32-S3](https://www.amazon.fr/dp/B0BYSB66S5/) | (1) (2) |
+| 1.0 | [Seeed Studio XIAO-ESP32-S3](https://www.amazon.fr/dp/B0BYSB66S5/) | (2) |
+| 1.1 | Waveshare [ESP32-C6-Zero](https://amzn.eu/d/0iYieorw) or [ESP32-S3-Zero](https://amzn.eu/d/05cgIHxE) (or equivalent pinout and footprint) | No known limitation |
+
+Known limitations:
+- (1) Ethernet module is not working on this PCB due to footprint error. Use this PCB only for Wifi project.
+- (2) The 1N5819 is missing on this PCB. You have to cut the track between R1 and pin 19 of the connector and put the 1N5819 as shown on the schematics below (D2):
+![image](doc/Diagral_ESP32_Schema_PCB1.0.png)
+
+#### Available PCB from France
+
+| PCB # | PCB price | Passive components (optional) | Quantity available |
+|----|---|---|---|
+| beta | 3€ | 2€ for 20-pin connector, 1x 1N5819, 1x XL74610, 3x 4.7k resistors, 1x 22k resistor, 1x 2.2k resistor | 3 (in stock) |
+| 1.0 | 3€ | 2€ for 20-pin connector, 1x 1N5819, 1x XL74610, 3x 4.7k resistors, 1x 22k resistor, 1x 2.2k resistor | 4 (in stock) |
+| 1.1 | 5€ | 1€ for 20-pin connector, 2x 1N5819, 3x 4.7k resistors, 1x 22k resistor, 1x 2.2k resistor | on demand |
+
+Additional costs for packaging and shipping to France (bubble envelope with tracking number) : 4€
+
+> [!NOTE]
+> Not included: ESP32, W5500 Ethernet module, battery and its connector, soldering the components on the PCB.
+
+Here is an example of components on PCB 1.0:
+![image](doc/PCB_front.jpg) ![image](doc/PCB_back.jpg) ![image](doc/PCB_mounted.jpg)
 
 ### Development environment
 
@@ -150,13 +181,14 @@ The development environment is based on:
 ### Starting guide
 
 Here are a few steps to follow to start with this project:
-1. If you are not familiar with VSCode and ESP-IDF, I encourage you to read ESP-IDF starting guide and try the "Hello world" example on your ESP32-S3 board. You should be able to build the example, flash the binary to your ESP32-S3 board and monitor the execution from ESP-IDF monitor tool before going to next step.
+1. If you are not familiar with VSCode and ESP-IDF, I encourage you to read ESP-IDF starting guide and try the "Hello world" example on your ESP32 board. You should be able to build the example, flash the binary to your ESP32 board and monitor the execution from ESP-IDF monitor tool before going to next step.
 2. Download this project / clone the repository, then open the project folder in VSCode.
-3. Choose the ESP32-S3 target
-4. Open "SDK Configuration Editor" to configure the project and go to "Diagral UART Project Configuration" section. Configure network and choose the GPIO pins you want to use to connect everything. The default configuration is compatible with the ESP32-S3 board from Seeed Studio (with battery management) and the schematics above.
-5. Use wires to connect all the pins (see schematics above)
-6. Provide your HTTPS public certificate for OTA (see [OTA section](#ota-update) to generate a certificate) or create an empty file named _ca_cert.pem_
-6. Build the source code, flash it to the board and monitor (there is single button that does everything if you are confident, otherwise, use the 3 buttons in this order).
+3. Solder the components on the PCB or use wires to connect all the pins on your prototyping board (see schematics above).
+4. Copy and rename the sdkconfig.default_xxx file to sdkconfig.default depending on your hardware.
+5. Choose the ESP32-S3 or ESP32-C6 target depending on your hardware.
+6. Open "SDK Configuration Editor" to configure the project and go to "Diagral UART Project Configuration" section. Configure network and choose the GPIO pins you want to use to connect everything.
+7. Provide your HTTPS public certificate for OTA (see [OTA section](#ota-update) to generate a certificate) or create an empty file named _ca_cert.pem_
+8. Build the source code, flash it to the board and monitor (there is single button that does everything if you are confident, otherwise, use the 3 buttons in this order).
 
 By default the project is configured with verbose enabled and not in passive mode: you can see what happens with detailed logs and you can control your Diagral alarm system. In active mode you can use the command line to send commands to your Diagral system. You can use passive mode to get frames from DIAG91AGFK to DIAG55AAX only (but you have to connect all 20 pins).
 
