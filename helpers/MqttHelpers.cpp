@@ -927,7 +927,7 @@ namespace Helpers
                     cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_TAMPER_CLEAR).c_str()));
                     cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_MAIN_POWER_LOST).c_str()));
                     cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_MAIN_POWER_RESTORED).c_str()));
-                    cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_BATTERY_LOW).c_str()));
+                    cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_BATTERY).c_str()));
                     cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_BATTERY_RESTORED).c_str()));
                     cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_RADIO_LOST).c_str()));
                     cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_RADIO_RESTORED).c_str()));

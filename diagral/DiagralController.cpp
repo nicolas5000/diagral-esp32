@@ -471,7 +471,7 @@ namespace Diagral
                   sDeviceState.lastError.errorType = DiagralErrorType::DIAGRAL_ERROR_MAIN_POWER_RESTORED;
                   break;
                 case 0x03:
-                  sDeviceState.lastError.errorType = DiagralErrorType::DIAGRAL_ERROR_BATTERY_LOW;
+                  sDeviceState.lastError.errorType = DiagralErrorType::DIAGRAL_ERROR_BATTERY;
                   break;
                 default:
                   DIAG_LOGE("Power notification: unknown value %d!", frame.data[3]);
@@ -1003,7 +1003,7 @@ namespace Diagral
       }
       else if (statusFrame.data[4] == DIAGRAL_DATA_ERROR_TYPE_GSM_BATTERY || statusFrame.data[4] == DIAGRAL_DATA_ERROR_TYPE_BATTERY)
       {
-        sDeviceState.lastError.errorType = statusFrame.data[3] == 0x00 ? DiagralErrorType::DIAGRAL_ERROR_BATTERY_RESTORED : DiagralErrorType::DIAGRAL_ERROR_BATTERY_LOW;
+        sDeviceState.lastError.errorType = statusFrame.data[3] == 0x00 ? DiagralErrorType::DIAGRAL_ERROR_BATTERY_RESTORED : DiagralErrorType::DIAGRAL_ERROR_BATTERY;
       }
       else
       {

@@ -62,8 +62,8 @@ namespace Diagral
             return "main_power_lost";
         case DiagralErrorType::DIAGRAL_ERROR_MAIN_POWER_RESTORED:
             return "main_power_restored";
-        case DiagralErrorType::DIAGRAL_ERROR_BATTERY_LOW:
-            return "battery_low";
+        case DiagralErrorType::DIAGRAL_ERROR_BATTERY:
+            return "battery";
         case DiagralErrorType::DIAGRAL_ERROR_BATTERY_RESTORED:
             return "battery_restored";
         case DiagralErrorType::DIAGRAL_ERROR_RADIO_LOST:
