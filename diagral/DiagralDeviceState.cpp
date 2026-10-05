@@ -74,6 +74,12 @@ namespace Diagral
             return "link_lost";
         case DiagralErrorType::DIAGRAL_ERROR_LINK_RESTORED:
             return "link_restored";
+        case DiagralErrorType::DIAGRAL_ERROR_ARM_CANCEL_ISSUE_OPEN:
+            return "arm_cancel_issue_open";
+        case DiagralErrorType::DIAGRAL_ERROR_ARM_CANCEL_TRANSMITTER_ERROR:
+            return "arm_cancel_transmitter_error";
+        case DiagralErrorType::DIAGRAL_ERROR_ARM_CANCEL_TAMPER:
+            return "arm_cancel_tamper";
         default:
             return "unknown";
         }

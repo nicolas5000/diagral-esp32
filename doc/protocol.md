@@ -152,7 +152,7 @@ This notification is sent by the alarm system when its state changes. It can als
 | 3 | J = 0x62 |
 | 4 | System mode: 0x00 = idle, 0x40 = test, 0x80 = setup |
 | 5 | State flags (see below) |
-| 6 | Error flag: bit 1 (0x02) indicates an error |
+| 6 | Error flags (see below) |
 | 7 | Not interpreted by this project |
 | 8 | Zone mask used when the system is disarmed |
 | 9 | Not interpreted by this project |
@@ -167,6 +167,14 @@ The state flags in byte 5 use the following bits:
 | 4 | 0x10 | Partial arm is active |
 | 6 | 0x40 | Full arm is active |
 | 7 | 0x80 | The system is arming |
+
+The error flags in byte 6 can have the following values:
+| Value | Meaning |
+|----|----|
+| 0x02 | Error (power lost, tamper, radio...) |
+| 0x21 | Arm cancelled due to open issue |
+| 0x22 | Arm cancelled due to transmitter error |
+| 0x23 | Arm cancelled due to tamper |
 
 The zone masks in bytes 8 and 10 use the same bit assignment as the [J=0x60 command](#j0x60---command-to-change-the-alarm-system-state).
 ##### J=0x65 - Alert notification from the alarm system

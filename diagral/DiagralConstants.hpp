@@ -100,6 +100,9 @@ namespace Diagral
   constexpr uint8_t DIAGRAL_DATA_STATE_ARM_ALL_BIT = 0x40;
   constexpr uint8_t DIAGRAL_DATA_STATE_ARMING_BIT = 0x80;
   constexpr uint8_t DIAGRAL_DATA_STATE_ERROR = 0x02;
+  constexpr uint8_t DIAGRAL_DATA_STATE_ARM_CANCEL_ISSUE_OPEN = 0x21;
+  constexpr uint8_t DIAGRAL_DATA_STATE_ARM_CANCEL_TRANSMITTER_ERROR = 0x22;
+  constexpr uint8_t DIAGRAL_DATA_STATE_ARM_CANCEL_TAMPER = 0x23;
   constexpr uint8_t DIAGRAL_DATA_STATE_MODE_IDLE = 0x00;  // Idle (not test, not setup mode)
   constexpr uint8_t DIAGRAL_DATA_STATE_MODE_TEST = 0x40;  // Test mode
   constexpr uint8_t DIAGRAL_DATA_STATE_MODE_SETUP = 0x80; // Setup / installation mode

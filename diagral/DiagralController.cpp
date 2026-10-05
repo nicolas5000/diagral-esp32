@@ -952,8 +952,34 @@ namespace Diagral
         if ((statusFrame.data[6] & DIAGRAL_DATA_ZONE4) || (statusFrame.data[6] == 0x00))
           sDeviceState.zone4 = DIAGRAL_STATE_DISARMED;
       }
-      sDeviceState.error = (statusFrame.data[4] & DIAGRAL_DATA_STATE_ERROR) != 0; // Error state?
+      sDeviceState.error = statusFrame.data[4] == DIAGRAL_DATA_STATE_ERROR; // Error state?
       sDeviceState.lastStateTimestamp = esp_timer_get_time();
+      if (statusFrame.data[4] >= DIAGRAL_DATA_STATE_ARM_CANCEL_ISSUE_OPEN) // do we have a "arm cancelled"?
+      {
+        bool error_updated = true;
+        switch (statusFrame.data[4])
+        {
+        case DIAGRAL_DATA_STATE_ARM_CANCEL_ISSUE_OPEN:
+          sDeviceState.lastError.errorType = DiagralErrorType::DIAGRAL_ERROR_ARM_CANCEL_ISSUE_OPEN;
+          break;
+        case DIAGRAL_DATA_STATE_ARM_CANCEL_TRANSMITTER_ERROR:
+          sDeviceState.lastError.errorType = DiagralErrorType::DIAGRAL_ERROR_ARM_CANCEL_TRANSMITTER_ERROR;
+          break;
+        case DIAGRAL_DATA_STATE_ARM_CANCEL_TAMPER:
+          sDeviceState.lastError.errorType = DiagralErrorType::DIAGRAL_ERROR_ARM_CANCEL_TAMPER;
+          break;
+        default:
+          DIAG_LOGE("UpdateDeviceState: unknown 'arm cancelled reason', please share the frame and reason!");
+          error_updated = false;
+          break;
+        }
+        if (error_updated)
+        {
+          sDeviceState.lastError.hardwareNumber = 0;
+          sDeviceState.lastError.hardwareType = DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_SYSTEM;
+          time(&sDeviceState.lastError.timestamp);
+        }
+      }
       break;
     case SUBCMD_GEN_ALERT_NOTIFICATION:
       if (statusFrame.data_length < 11)
