@@ -70,6 +70,10 @@ namespace Diagral
             return "radio_lost";
         case DiagralErrorType::DIAGRAL_ERROR_RADIO_RESTORED:
             return "radio_restored";
+        case DiagralErrorType::DIAGRAL_ERROR_LINK_LOST:
+            return "link_lost";
+        case DiagralErrorType::DIAGRAL_ERROR_LINK_RESTORED:
+            return "link_restored";
         default:
             return "unknown";
         }
@@ -86,6 +90,8 @@ namespace Diagral
             return "command";
         case DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_SIREN:
             return "siren";
+        case DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_INTERNET_TRANSMITTER:
+            return "internet_transmitter";
         default:
             return "unknown";
         }

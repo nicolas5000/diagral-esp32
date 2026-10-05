@@ -931,6 +931,8 @@ namespace Helpers
                     cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_BATTERY_RESTORED).c_str()));
                     cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_RADIO_LOST).c_str()));
                     cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_RADIO_RESTORED).c_str()));
+                    cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_LINK_LOST).c_str()));
+                    cJSON_AddItemToArray(events, cJSON_CreateString(DiagralErrorTypeToString(DiagralErrorType::DIAGRAL_ERROR_LINK_RESTORED).c_str()));
                 }
                 else
                     error = true;

@@ -104,6 +104,7 @@ namespace Diagral
   constexpr uint8_t DIAGRAL_DATA_STATE_MODE_TEST = 0x40;  // Test mode
   constexpr uint8_t DIAGRAL_DATA_STATE_MODE_SETUP = 0x80; // Setup / installation mode
   constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_TAMPER = 0x40;
+  constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_LINK = 0x55;
   constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_RADIO = 0x59;
   constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_BATTERY = 0x70;
   constexpr uint8_t DIAGRAL_DATA_ERROR_TYPE_GSM_BATTERY = 0x71;

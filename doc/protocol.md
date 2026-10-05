@@ -228,6 +228,7 @@ The known error types are:
 | Value | Meaning when active | Meaning when byte 5 is 0x00 |
 |----|----|----|
 | 0x40 | Tamper active | Tamper cleared |
+| 0x55 | GSM or Internet link lost | GSM or Internet link restored |
 | 0x59 | Radio link lost | Radio link restored |
 | 0x70 | Battery low | Battery restored |
 | 0x71 | GSM battery low | GSM battery restored |
@@ -239,6 +240,7 @@ The known hardware types are:
 | 0x20 | Command module |
 | 0x30 or 0x31 | Sensor |
 | 0x40 | Siren |
+| 0x50 | Internet transmitter |
 
 The ESP32 records the error state, hardware type, hardware number, and reception time. Main power events are reported separately with [K=0x42](#k0x42---alarm-system-power-notification).
 ##### J=0x6C - State change ack

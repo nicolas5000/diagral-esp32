@@ -181,7 +181,7 @@ Here is an example of discovery message sent to this topic:
 			"p":	"event",
 			"unique_id":	"diagral-esp32_last_error",
 			"name":	"Last error",
-			"event_types":	["tamper", "tamper_clear", "main_power_lost", "main_power_restored", "battery_low", "battery_restored", "radio_lost", "radio_restored"],
+			"event_types":	["tamper", "tamper_clear", "main_power_lost", "main_power_restored", "battery_low", "battery_restored", "radio_lost", "radio_restored", "link_lost", "link_restored"],
 			"state_topic":	"diagral-esp32/last_error"
 		}
 	}

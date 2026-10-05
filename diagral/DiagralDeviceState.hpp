@@ -49,7 +49,9 @@ namespace Diagral
         DIAGRAL_ERROR_BATTERY,
         DIAGRAL_ERROR_BATTERY_RESTORED,
         DIAGRAL_ERROR_RADIO_LOST,
-        DIAGRAL_ERROR_RADIO_RESTORED
+        DIAGRAL_ERROR_RADIO_RESTORED,
+        DIAGRAL_ERROR_LINK_LOST,
+        DIAGRAL_ERROR_LINK_RESTORED
     };
     enum DiagralErrorHardwareType
     {
@@ -57,6 +59,7 @@ namespace Diagral
         DIGRAL_ERROR_MATERIAL_SENSOR,
         DIGRAL_ERROR_MATERIAL_COMMAND,
         DIGRAL_ERROR_MATERIAL_SIREN,
+        DIGRAL_ERROR_MATERIAL_INTERNET_TRANSMITTER,
     };
     enum DiagralDetectionEventType
     {

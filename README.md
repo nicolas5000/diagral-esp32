@@ -50,7 +50,7 @@ These features are currently available:
   - Battery charging state. Note: it works only if you have a battery connected to provide power to the device!
 - Control the alarm system: Arm/"Arm home"/Disarm with or withour PIN code (choose before building firmware or from command line), can't be modified from MQTT and Home Assistant.
 - Events:
-  - Error event: event type (tamper, main power, battery, radio link), harware type (system, sensor, command, siren), hardware number
+  - Error event: event type (tamper, main power, battery, radio link, internet link), harware type (system, sensor, command, siren), hardware number
   - Detection event: event type, sensor type, sensor number
   - Alert event: alert type (fire, alert, silent alert, duress disarm), command number
 - Control the ESP32:

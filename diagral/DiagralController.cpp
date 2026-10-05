@@ -997,6 +997,10 @@ namespace Diagral
       {
         sDeviceState.lastError.errorType = statusFrame.data[3] == 0x00 ? DiagralErrorType::DIAGRAL_ERROR_TAMPER_CLEAR : DiagralErrorType::DIAGRAL_ERROR_TAMPER;
       }
+      else if (statusFrame.data[4] == DIAGRAL_DATA_ERROR_TYPE_LINK)
+      {
+        sDeviceState.lastError.errorType = statusFrame.data[3] == 0x00 ? DiagralErrorType::DIAGRAL_ERROR_LINK_RESTORED : DiagralErrorType::DIAGRAL_ERROR_LINK_LOST;
+      }
       else if (statusFrame.data[4] == DIAGRAL_DATA_ERROR_TYPE_RADIO)
       {
         sDeviceState.lastError.errorType = statusFrame.data[3] == 0x00 ? DiagralErrorType::DIAGRAL_ERROR_RADIO_RESTORED : DiagralErrorType::DIAGRAL_ERROR_RADIO_LOST;
@@ -1011,7 +1015,11 @@ namespace Diagral
         return;
       }
       // Hardware type
-      if (statusFrame.data[5] == 0x40)
+      if (statusFrame.data[5] == 0x50)
+      {
+        sDeviceState.lastError.hardwareType = DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_INTERNET_TRANSMITTER;
+      }
+      else if (statusFrame.data[5] == 0x40)
       {
         sDeviceState.lastError.hardwareType = DiagralErrorHardwareType::DIGRAL_ERROR_MATERIAL_SIREN;
       }
