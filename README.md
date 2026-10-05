@@ -184,7 +184,7 @@ Here are a few steps to follow to start with this project:
 1. If you are not familiar with VSCode and ESP-IDF, I encourage you to read ESP-IDF starting guide and try the "Hello world" example on your ESP32 board. You should be able to build the example, flash the binary to your ESP32 board and monitor the execution from ESP-IDF monitor tool before going to next step.
 2. Download this project / clone the repository, then open the project folder in VSCode.
 3. Solder the components on the PCB or use wires to connect all the pins on your prototyping board (see schematics above).
-4. Copy and rename the sdkconfig.default_xxx file to sdkconfig.default depending on your hardware.
+4. Copy and rename the sdkconfig.defaults_xxx file to sdkconfig.defaults depending on your hardware.
 5. Choose the ESP32-S3 or ESP32-C6 target depending on your hardware.
 6. Open "SDK Configuration Editor" to configure the project and go to "Diagral UART Project Configuration" section. Configure network and choose the GPIO pins you want to use to connect everything.
 7. Provide your HTTPS public certificate for OTA (see [OTA section](#ota-update) to generate a certificate) or create an empty file named _ca_cert.pem_
