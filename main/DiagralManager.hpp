@@ -35,9 +35,13 @@ namespace Diagral
         /// @return true if currently in passive mode
         bool isDiagralPassive() { return mDiagralPassive; }
 
+        /// @brief Retrieve rollback status
+        /// @return true if rollback is disabled
+        bool isRollbackDisabled() { return mDisableRollback; }
+
     private:
         bool mDiagralPassive = false; // current configuration, initialized at boot
-        bool mDisableRollback = true; // will be set to false once MQTT is connected
+        bool mDisableRollback = false; // will be set to true once MQTT is connected
 
         /// @brief Initialize Diagral controller member (mDiagralController)
         void InitializeDiagral();

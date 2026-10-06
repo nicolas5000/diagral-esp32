@@ -203,10 +203,13 @@ If you need to see all exchanges you will have to use another "spy UART project"
 In this mode you can control your alarm system.
 
 > [!NOTE]
-> - Keep verbose enabled if you want to see what happens in Diagral UART layer. In addition to console, exchanged frames can be sent to a Syslog server.
+> Keep verbose enabled if you want to see what happens in Diagral UART layer. In addition to console, exchanged frames can be sent to a Syslog server.
 
 ### OTA update
 In order to update the firmware from Wifi or Ethernet securely, you should use an HTTPS server. If you don't mind, you can also use a simple HTTP server. This section describes the 2 options.
+
+> [!NOTE]
+> After OTA is performed, the ESP32 will reboot automatically. Then, if MQTT is not able to connect within 60s, the rollback will be performed to reboot on previous firmware.
 
 #### OTA over HTTPS
 1. Generate your certificate and key: you can use the command `openssl req -x509 -newkey rsa:2048 -keyout ca_key.pem -out ca_cert.pem -days 365 -nodes`. Don't forget to use a CN field that matches the machine IP address or name (like _myserver.lan_) that will be used in the URL when performing OTA. Note: this file is required to build and be included within the first firmware to load using USB.

@@ -14,6 +14,8 @@
 
 static const char *TAG = "diagralMan";
 
+constexpr TickType_t ROLLBACK_TIMEOUT_MS = 60000; // 60 seconds
+
 extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
 extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
 
@@ -119,9 +121,47 @@ namespace Diagral
         }
     }
 
+    /// @brief Task that validates or discard OTA depending on network and MQTT connection success within 60 seconds
+    /// @param arg not used
+    static void check_ota_rollback_task(void *arg)
+    {
+        const esp_partition_t *running = esp_ota_get_running_partition();
+        esp_ota_img_states_t ota_state;
+        if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK)
+        {
+            if (ota_state == ESP_OTA_IMG_PENDING_VERIFY && esp_ota_check_rollback_is_possible())
+            {
+                DIAG_LOGI("OTA is pending, wait for 60s!");
+                vTaskDelay(pdMS_TO_TICKS(ROLLBACK_TIMEOUT_MS));
+                if (sDiagralManager->isRollbackDisabled())
+                {
+                    DIAG_LOGI("Rollback cancelled!");
+                    esp_ota_mark_app_valid_cancel_rollback();
+                }
+                else
+                {
+                    DIAG_LOGE("Rollback and reboot!");
+                    esp_ota_mark_app_invalid_rollback();
+                    sDiagralManager->Reboot();
+                }
+            }
+            else
+            {
+                DIAG_LOGI("No need to validate OTA!");
+            }
+        }
+        else
+        {
+            DIAG_LOGE("Unable to get OTA state!");
+        }
+        vTaskDelete(NULL);
+    }
+
     DiagralManager::DiagralManager()
     {
         sDiagralManager = this;
+        // start OTA rollback task
+        xTaskCreate(check_ota_rollback_task, "check_ota_rollback_task", 4096, NULL, tskIDLE_PRIORITY, NULL);
         // Initialize Diagral object
         InitializeDiagral();
         // Initialize network: Ethernet/Wifi + DHCP/Static IP + SNTP
@@ -161,25 +201,7 @@ namespace Diagral
     }
     void DiagralManager::NotifyMQTTConnected()
     {
-        if (mDisableRollback)
-        {
-            DIAG_LOGI("Checking OTA pending state...");
-            const esp_partition_t *running = esp_ota_get_running_partition();
-            esp_ota_img_states_t ota_state;
-            if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK)
-            {
-                mDisableRollback = false;
-                if (ota_state == ESP_OTA_IMG_PENDING_VERIFY)
-                {
-                    esp_ota_mark_app_valid_cancel_rollback();
-                    DIAG_LOGI("Rollback cancelled!");
-                }
-                else
-                {
-                    DIAG_LOGI("No need to cancel rollback!");
-                }
-            }
-        }
+        mDisableRollback = true;
     }
     void DiagralManager::InitializeDiagral()
     {
@@ -202,7 +224,8 @@ namespace Diagral
     }
     void DiagralManager::InitializeMqtt()
     {
-        if (sMqttHelper != nullptr) return;
+        if (sMqttHelper != nullptr)
+            return;
         if (MqttConfig::isEnabled())
         {
             // Create MQTT helper
@@ -215,7 +238,8 @@ namespace Diagral
     }
     void DiagralManager::InitializeSyslog()
     {
-        if (sSyslogHelper != nullptr) return;
+        if (sSyslogHelper != nullptr)
+            return;
         if (SyslogConfig::isEnabled())
         {
             // Create Syslog helper
