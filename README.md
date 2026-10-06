@@ -16,7 +16,7 @@ The goal of this project is to connect your Diagral system locally to your Home 
 
 ### **Disclaimer**  
 > [!CAUTION]
-> This tool designed for educational and testing purposes, provided "as is", without warranty of any kind. It has no link with Diagral company. Creators and contributors are not responsible for any misuse or damage caused by this tool. Keep in mind that you should have a secure MQTT and Home Assistant instances to avoid any attack on your alarm system from your domotics.
+> This tool is designed for educational and testing purposes, provided "as is", without warranty of any kind. It has no link with Diagral company. Creators and contributors are not responsible for any misuse or damage caused by this tool. Keep in mind that you should have a secure MQTT and Home Assistant instances to avoid any attack on your alarm system from your domotics.
 
 ### **Security**
 To use this project in a secure way, you shall:
@@ -48,7 +48,7 @@ These features are currently available:
   - Mode (idle, setup, test)
   - Zones 1 to 4 status (disarmed, arming, armed, armed "home", triggered)
   - Battery charging state. Note: it works only if you have a battery connected to provide power to the device!
-- Control the alarm system: Arm/"Arm home"/Disarm with or withour PIN code (choose before building firmware or from command line), can't be modified from MQTT and Home Assistant.
+- Control the alarm system: Arm/"Arm home"/Disarm with or withour PIN code (choose before building firmware or from command line, can't be modified from MQTT and Home Assistant).
 - Events:
   - Error event: event type (tamper, main power, battery, radio link, internet link, arm cancelled reason), harware type (system, sensor, command, siren), hardware number
   - Detection event: event type, sensor type, sensor number
@@ -76,8 +76,9 @@ These features are currently available:
     - Discovery message is published and compatible with Home Assistant, permitting to automatically add device to it without extra configuration.
     - In addition:
       - A button is added to reboot the ESP32 board.
-      - A switch is added to enable/disable Diagral layer logging (applied after reboot)
-      - A switch is added to enable/disable Diagral passive mode (applied after reboot)
+      - A switch is added to enable/disable Diagral layer logging (applied after reboot).
+      - A switch is added to enable/disable Diagral passive mode (applied after reboot).
+      - A text is added to provide URL of the new firmware for OTA (sending the text will start OTA).
 - Configuration storage to flash
 - [OTA firmware update](#ota-update) (update from Wifi or Ethernet using an HTTP(S) server) with rollback.
 

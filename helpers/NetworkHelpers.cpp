@@ -24,6 +24,7 @@
 static const char *TAG = "networkHelper";
 static bool sIsConnected = false;
 static esp_netif_t *s_netif = nullptr;
+static Helpers::ConnectedCallback sConnectedCallback = nullptr;
 
 using namespace Config;
 
@@ -130,6 +131,7 @@ namespace Helpers
             ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
             ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
             sIsConnected = true;
+            sConnectedCallback();
         }
     }
 
@@ -222,6 +224,7 @@ namespace Helpers
             // configure SNTP
             set_sntp_from_configuration();
             sIsConnected = true;
+            sConnectedCallback();
         }
     }
 
@@ -322,8 +325,9 @@ namespace Helpers
         ESP_ERROR_CHECK(esp_eth_start(eth_handle));
     }
 #endif // CONFIG_CONNECTIVITY_CHOICE_ETH
-    void NetworkHelpers::InitNetwork()
+    void NetworkHelpers::InitNetwork(ConnectedCallback connectedCallback)
     {
+        sConnectedCallback = connectedCallback;
         ESP_ERROR_CHECK(esp_netif_init());
         ESP_ERROR_CHECK(esp_event_loop_create_default());
 #ifdef CONFIG_CONNECTIVITY_CHOICE_WIFI

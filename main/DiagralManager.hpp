@@ -22,6 +22,12 @@ namespace Diagral
         /// @param url URL to the upgrade file
         void Upgrade(std::string url);
 
+        /// @brief Initialize MQTT object members (sMqttHelper)
+        void InitializeMqtt();
+
+        /// @brief Initialize Syslog object members (sSyslogHelper)
+        void InitializeSyslog();
+
         /// @brief Called by MqttHelpers when connected to MQTT server (to validate OTA update and cancel rollback)
         void NotifyMQTTConnected();
 
@@ -35,12 +41,6 @@ namespace Diagral
 
         /// @brief Initialize Diagral controller member (mDiagralController)
         void InitializeDiagral();
-
-        /// @brief Initialize MQTT object members (sMqttHelper)
-        void InitializeMqtt();
-
-        /// @brief Initialize Syslog object members (sSyslogHelper)
-        void InitializeSyslog();
     };
 
 }

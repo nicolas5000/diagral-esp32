@@ -1,5 +1,6 @@
 #include "DiagralManager.hpp"
 #include "HardwareConfig.hpp"
+#include "NetworkHelpers.hpp"
 #include "MqttConfig.hpp"
 #include "SyslogConfig.hpp"
 #include "DiagralConfig.hpp"
@@ -105,20 +106,26 @@ namespace Diagral
         }
     }
 
+    static void networkConnectedCallback()
+    {
+        // Initialize syslog object
+        sDiagralManager->InitializeSyslog();
+        // Initialize MQTT object
+        sDiagralManager->InitializeMqtt();
+        // Start everything
+        if (sMqttHelper != nullptr)
+        {
+            sMqttHelper->StartMqttClient(sDiagralManager, loggerCallback);
+        }
+    }
+
     DiagralManager::DiagralManager()
     {
         sDiagralManager = this;
         // Initialize Diagral object
         InitializeDiagral();
-        // Initialize MQTT object
-        InitializeMqtt();
-        // Initialize syslog object
-        InitializeSyslog();
-        // Start everything
-        if (sMqttHelper != nullptr)
-        {
-            sMqttHelper->StartMqttClient(this, loggerCallback);
-        }
+        // Initialize network: Ethernet/Wifi + DHCP/Static IP + SNTP
+        NetworkHelpers::InitNetwork(networkConnectedCallback);
     }
     void DiagralManager::Reboot()
     {
@@ -195,6 +202,7 @@ namespace Diagral
     }
     void DiagralManager::InitializeMqtt()
     {
+        if (sMqttHelper != nullptr) return;
         if (MqttConfig::isEnabled())
         {
             // Create MQTT helper
@@ -207,6 +215,7 @@ namespace Diagral
     }
     void DiagralManager::InitializeSyslog()
     {
+        if (sSyslogHelper != nullptr) return;
         if (SyslogConfig::isEnabled())
         {
             // Create Syslog helper
