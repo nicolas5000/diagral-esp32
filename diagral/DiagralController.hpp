@@ -102,6 +102,10 @@ namespace Diagral
     /// @return true if no error
     bool Disarm(uint8_t zones);
 
+    /// @brief Notify the alarm system that connectivity is in error (or not)
+    /// @param connectivityError true if connectivity is in error, false otherwise
+    void NotifyConnectivity(bool connectivityError);
+
   protected:
     int mTxSignalPin;      // GPIO connected to TX signal pin
     bool mInitialized;     // true if Init is done

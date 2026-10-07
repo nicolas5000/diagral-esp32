@@ -19,6 +19,12 @@ namespace Diagral
     /// @return true on success
     bool create_J96_response(DiagralFrame &frame);
 
+    /// @brief Create a I=07/J=69 Frame
+    /// @param frame frame to create
+    /// @param error true if connectivity is in error, false otherwise
+    /// @return true on success
+    bool create_gsm_connectivity_command(DiagralFrame &frame, bool error);
+
     /// @brief Create a I=07/J=6C Frame
     /// @param frame response to create
     /// @param idle true if system is in idle mode
@@ -77,14 +83,4 @@ namespace Diagral
     /// @return true on success
     bool create_pin_check_command(DiagralFrame &frame, std::string pinCode);
 
-    /// @brief Create a xxx Frame
-    /// @param frame Output DiagralFrame structure
-    /// @return true on success
-    bool create_xxx_request(DiagralFrame &frame);
-
-    /// @brief Process xxx response
-    /// @param frame Input DiagralFrame structure
-    /// @param device The structure to fill from Diagral Frame
-    /// @return true on success
-    bool process_xxx(const DiagralFrame &frame, DiagralDeviceState &device);
 } // namespace Diagral

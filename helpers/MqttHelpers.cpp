@@ -117,7 +117,7 @@ namespace Helpers
         case MQTT_EVENT_CONNECTED:
         {
             DIAG_LOGI("MQTT_EVENT_CONNECTED");
-            mqttHelper->GetDiagralManager()->NotifyMQTTConnected();
+            mqttHelper->GetDiagralManager()->NotifyMQTTConnectionState(true);
             // send birth message
             std::string topic = mqttHelper->GetTopicPrefix() + MQTT_CLIENT_BIRTH_WILL_TOPIC;
             const char *data = MQTT_CLIENT_BIRTH_MSG.c_str();
@@ -149,6 +149,7 @@ namespace Helpers
         }
         case MQTT_EVENT_DISCONNECTED:
             DIAG_LOGI("MQTT_EVENT_DISCONNECTED");
+            mqttHelper->GetDiagralManager()->NotifyMQTTConnectionState(false);
             mqttHelper->OnMqttDisconnected();
             break;
 

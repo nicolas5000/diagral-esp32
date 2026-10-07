@@ -14,7 +14,9 @@
 
 static const char *TAG = "diagralMan";
 
-constexpr TickType_t ROLLBACK_TIMEOUT_MS = 60000; // 60 seconds
+constexpr TickType_t ROLLBACK_TIMEOUT_MS = 60000;           // 60 seconds
+constexpr TickType_t MQTT_DISCONNECTED_TIMEOUT_MS = 300000; // 5 minutes
+constexpr TickType_t CONNECTIVITY_WATCHDOG_CHECK_MS = 5000; // 5 seconds
 
 extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
 extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
@@ -121,9 +123,11 @@ namespace Diagral
         }
     }
 
-    /// @brief Task that validates or discard OTA depending on network and MQTT connection success within 60 seconds
+    /// @brief Task that checks network and MQTT connection success
+    /// @details In case of failure at boot during more than 60s and OTA validation is pending, it will rollback and reboot.
+    /// In case of failure during more than 5 minutes, it will send a notification to Diagral alarm system and try to reboot.
     /// @param arg not used
-    static void check_ota_rollback_task(void *arg)
+    static void connectivity_watchdog_task(void *arg)
     {
         const esp_partition_t *running = esp_ota_get_running_partition();
         esp_ota_img_states_t ota_state;
@@ -131,9 +135,9 @@ namespace Diagral
         {
             if (ota_state == ESP_OTA_IMG_PENDING_VERIFY && esp_ota_check_rollback_is_possible())
             {
-                DIAG_LOGI("OTA is pending, wait for 60s!");
+                DIAG_LOGI("OTA validation is pending, wait for 60s!");
                 vTaskDelay(pdMS_TO_TICKS(ROLLBACK_TIMEOUT_MS));
-                if (sDiagralManager->isRollbackDisabled())
+                if (sDiagralManager->GetTimeSinceMqttDisconnection() < ROLLBACK_TIMEOUT_MS / 1000)
                 {
                     DIAG_LOGI("Rollback cancelled!");
                     esp_ota_mark_app_valid_cancel_rollback();
@@ -154,14 +158,28 @@ namespace Diagral
         {
             DIAG_LOGE("Unable to get OTA state!");
         }
+        if (MqttConfig::isEnabled())
+        {
+            while (true)
+            {
+                vTaskDelay(pdMS_TO_TICKS(CONNECTIVITY_WATCHDOG_CHECK_MS));
+                if (sDiagralManager->GetTimeSinceMqttDisconnection() > MQTT_DISCONNECTED_TIMEOUT_MS / 1000)
+                {
+                    DIAG_LOGI("MQTT disconnected since more than 5 minutes -> reboot!");
+                    sDiagralManager->mDiagralController->NotifyConnectivity(true);
+                    sDiagralManager->Reboot();
+                }
+            }
+        }
         vTaskDelete(NULL);
     }
 
     DiagralManager::DiagralManager()
     {
         sDiagralManager = this;
-        // start OTA rollback task
-        xTaskCreate(check_ota_rollback_task, "check_ota_rollback_task", 4096, NULL, tskIDLE_PRIORITY, NULL);
+        mLastMqttDisconnectionTimestamp = esp_timer_get_time();
+        // start connectivity watchdog task
+        xTaskCreate(connectivity_watchdog_task, "check_ota_rollback_task", 4096, NULL, tskIDLE_PRIORITY, NULL);
         // Initialize Diagral object
         InitializeDiagral();
         // Initialize network: Ethernet/Wifi + DHCP/Static IP + SNTP
@@ -199,9 +217,20 @@ namespace Diagral
             DIAG_LOGE("Firmware upgrade failed");
         }
     }
-    void DiagralManager::NotifyMQTTConnected()
+    void DiagralManager::NotifyMQTTConnectionState(bool connected)
     {
-        mDisableRollback = true;
+        if (connected)
+        {
+            mLastMqttDisconnectionTimestamp = 0;
+        }
+        else if (mLastMqttDisconnectionTimestamp == 0)
+        {
+            mLastMqttDisconnectionTimestamp = esp_timer_get_time();
+        }
+    }
+    uint32_t DiagralManager::GetTimeSinceMqttDisconnection()
+    {
+        return mLastMqttDisconnectionTimestamp == 0 ? 0 : (esp_timer_get_time() - mLastMqttDisconnectionTimestamp) / 1000000;
     }
     void DiagralManager::InitializeDiagral()
     {

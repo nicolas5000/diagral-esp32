@@ -217,6 +217,14 @@ The known event types are:
 | 0x1A | Intrusion confirmed |
 
 The zone mask uses bit 0 for zone 1, bit 1 for zone 2, bit 2 for zone 3, and bit 3 for zone 4. The ESP32 marks the corresponding zones as triggered and records the event type, sensor type, sensor number, and reception time.
+##### J=0x69 - GSM connectivity notification
+This frame is sent by the GSM module to notify connectivity status. The payload contains 6 data bytes, so byte 0 (L) is 0x06.
+| Byte # | Description |
+|----|---|
+| 2 | I = 0x07 |
+| 3 | J = 0x69 |
+| 4 | 0x01 in case of connectivity error, 0x00 otherwise |
+| 5 | 0x55 = Connectivity status |
 ##### J=0x6B - Error notification from the alarm system
 This notification is sent by the alarm system when an error or fault is raised or cleared. The payload contains 12 data bytes, so byte 0 (L) is 0x0C.
 | Byte # | Description |
@@ -252,7 +260,7 @@ The known hardware types are:
 
 The ESP32 records the error state, hardware type, hardware number, and reception time. Main power events are reported separately with [K=0x42](#k0x42---alarm-system-power-notification).
 ##### J=0x6C - State change ack
-This frame is sent by the GSM module when when the alarm system mode changes (in response to [J=0x62](#j0x62---status-notification-from-the-alarm-system)). The payload contains 6 data bytes, so byte 0 (L) is 0x06.
+This frame is sent by the GSM module when the alarm system mode changes (in response to [J=0x62](#j0x62---status-notification-from-the-alarm-system)). The payload contains 6 data bytes, so byte 0 (L) is 0x06.
 | Byte # | Description |
 |----|---|
 | 2 | I = 0x07 |

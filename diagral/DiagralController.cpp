@@ -403,7 +403,7 @@ namespace Diagral
                 DiagralFrame response;
                 if (!create_gsm_state_response(response, sDeviceState.mode == DIAGRAL_MODE_IDLE) || !TransmitFrame(response))
                 {
-                  DIAG_LOGE("ProcessReceivedFrameTask failed to send J6C response!");
+                  DIAG_LOGE("ProcessReceivedFrameTask failed to send J=6C response!");
                 }
               }
               break;
@@ -533,6 +533,7 @@ namespace Diagral
         if ((esp_timer_get_time() > sDeviceState.lastStateTimestamp + STATE_UPDATE_MAX_TIME_US || sDeviceState.lastStateTimestamp == 0) // previous update is a long time ago
             && (esp_timer_get_time() > sNextStateUpdateTimestamp))                                                                      // and previous attempt is expired
         {
+          bool sendGsmConnectivity = sDeviceState.lastError.timestamp == 0;
           // So let's update device status
           mUartMutex.lock();
           DiagralFrame request;
@@ -552,6 +553,7 @@ namespace Diagral
               DIAG_LOGE("UpdateDeviceStateTask: invalid response!");
           }
           mUartMutex.unlock();
+          if (sendGsmConnectivity) NotifyConnectivity(false); // let's assume there is currently no error
         }
       }
       vTaskDelay(pdMS_TO_TICKS(UPDATE_STATE_WAKEUP_INTERVAL_MS)); // Wait until next loop to check again
@@ -686,6 +688,29 @@ namespace Diagral
       return SetGetState(DIAGRAL_DATA_STATE_SET_ARM_DISARM_PARTIAL, zones);
     else
       return SetGetState(DIAGRAL_DATA_STATE_SET_DISARM_ALL);
+  }
+
+  void DiagralController::NotifyConnectivity(bool connectivityError)
+  {
+    if (!mInitialized || mPassiveMode)
+    {
+      DIAG_LOGE("NotifyConnectivity: invalid state! (not initialized or passive mode)");
+      return;
+    }
+    DiagralFrame request;
+    // Take mutex and change task priority
+    mUartMutex.lock();
+    UBaseType_t currentPriority = uxTaskPriorityGet(NULL);
+    vTaskPrioritySet(NULL, RX_FRAME_PROCESSING_PRIORITY);
+    // Create and send request
+    if (!create_gsm_connectivity_command(request, connectivityError) || !TransmitFrame(request))
+    {
+      DIAG_LOGE("NotifyConnectivity: failed to send request!");
+    }
+    // Release mutex and restore task priority
+    vTaskPrioritySet(NULL, currentPriority);
+    mUartMutex.unlock();
+    vTaskDelay(pdMS_TO_TICKS(2000)); // wait a few time to receive error notification from alarm system
   }
 
   esp_err_t DiagralController::ConfigureTxSignalPin(bool txMode)

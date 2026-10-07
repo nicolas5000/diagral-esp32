@@ -28,20 +28,21 @@ namespace Diagral
         /// @brief Initialize Syslog object members (sSyslogHelper)
         void InitializeSyslog();
 
-        /// @brief Called by MqttHelpers when connected to MQTT server (to validate OTA update and cancel rollback)
-        void NotifyMQTTConnected();
+        /// @brief Called by MqttHelpers when connected to or disconnected from MQTT server
+        /// @param connected true if MQTT is connected, false if MQTT is disconnected
+        void NotifyMQTTConnectionState(bool connected);
 
         /// @brief Retrieve current configuration about passive / active mode
         /// @return true if currently in passive mode
         bool isDiagralPassive() { return mDiagralPassive; }
 
-        /// @brief Retrieve rollback status
-        /// @return true if rollback is disabled
-        bool isRollbackDisabled() { return mDisableRollback; }
+        /// @brief Retrieve time elapsed since MQTT is disconnected
+        /// @return time in seconds
+        uint32_t GetTimeSinceMqttDisconnection();
 
     private:
         bool mDiagralPassive = false; // current configuration, initialized at boot
-        bool mDisableRollback = false; // will be set to true once MQTT is connected
+        uint64_t mLastMqttDisconnectionTimestamp; // contains the timestamp when MQTT was disconnected for the last time (or 0 if currently connected)
 
         /// @brief Initialize Diagral controller member (mDiagralController)
         void InitializeDiagral();

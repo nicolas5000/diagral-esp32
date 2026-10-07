@@ -14,6 +14,15 @@ namespace Diagral
         return true;
     }
 
+    bool create_gsm_connectivity_command(DiagralFrame &frame, bool error)
+    {
+        uint8_t data[4] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_GSM_CONNECTIVITY_STATE, 0x00, DIAGRAL_DATA_ERROR_TYPE_LINK};
+        data[2] = error ? 0x01 : 0x00;
+        memcpy(frame.data, data, sizeof(data));
+        frame.data_length = sizeof(data);
+        return true;
+    }
+
     bool create_gsm_state_response(DiagralFrame &frame, bool idle)
     {
         uint8_t data[4] = {CMD_GENERIC_MANAGEMENT, SUBCMD_GEN_GSM_STATE, 0x00, 0x00};
@@ -135,18 +144,6 @@ namespace Diagral
         // Prepare DiagralFrame
         memcpy(frame.data, data, sizeof(data));
         frame.data_length = sizeof(data);
-        return true;
-    }
-
-    bool create_xxx_request(DiagralFrame &frame)
-    {
-        // TODO
-        return true;
-    }
-
-    bool process_xxx(const DiagralFrame &frame, DiagralDeviceState &device)
-    {
-        // TODO
         return true;
     }
 

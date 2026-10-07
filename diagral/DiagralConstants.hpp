@@ -38,7 +38,7 @@ namespace Diagral
   constexpr uint8_t SUBCMD_GEN_SET_OUTPUT = 0x63;             // Command sent by GSM module to change light or relay state
   constexpr uint8_t SUBCMD_GEN_ALERT_NOTIFICATION = 0x65;     // Command from system on 'alert' event
   constexpr uint8_t SUBCMD_GEN_DETECTION_NOTIFICATION = 0x68; // Command from system on 'detection' event
-  constexpr uint8_t SUBCMD_GEN_GSM_NOSIM = 0x69;              // Sent by GSM (seen when no SIM card)
+  constexpr uint8_t SUBCMD_GEN_GSM_CONNECTIVITY_STATE = 0x69; // Sent by GSM to indicate connectivity state
   constexpr uint8_t SUBCMD_GEN_ERROR_NOTIFICATION = 0x6B;     // Command from system on 'error' event (tamper, battery voltage, radio communication lost)
   constexpr uint8_t SUBCMD_GEN_GSM_STATE = 0x6C;              // Sent by GSM, contains system mode
   constexpr uint8_t SUBCMD_GEN_GSM_NOTIFICATION = 0x70;       // Sent by GSM when after SMS or voice call

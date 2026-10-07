@@ -81,6 +81,7 @@ These features are currently available:
       - A text is added to provide URL of the new firmware for OTA (sending the text will start OTA).
 - Configuration storage to flash
 - [OTA firmware update](#ota-update) (update from Wifi or Ethernet using an HTTP(S) server) with rollback.
+- MQTT connectivity watchdog: if MQTT connection is broken more than 5 minutes, the ESP32 will notify the alarm system and reboot.
 
 ### Diagral DIAG91AGFK 20-pins connector
 The DIAG91AGFK has a 20-pins connector on the back to connect the DIAG55AAX GSM module. We use this connector for our project. Please check pin numbers:
