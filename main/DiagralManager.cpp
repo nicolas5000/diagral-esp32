@@ -22,6 +22,7 @@ extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
 extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
 
 #include <format>
+#include <utility>
 
 #define DIAG_LOGE(a, ...)                                                              \
     do                                                                                 \
@@ -139,12 +140,25 @@ namespace Diagral
                 vTaskDelay(pdMS_TO_TICKS(ROLLBACK_TIMEOUT_MS));
                 if (sDiagralManager->GetTimeSinceMqttDisconnection() < ROLLBACK_TIMEOUT_MS / 1000)
                 {
-                    DIAG_LOGI("Rollback cancelled!");
-                    esp_ota_mark_app_valid_cancel_rollback();
+                    const esp_err_t err = esp_ota_mark_app_valid_cancel_rollback();
+                    if (err == ESP_OK)
+                    {
+                        DIAG_LOGI("Rollback cancelled!");
+                        if (sMqttHelper != nullptr)
+                            sMqttHelper->PublishOtaStatus("Firmware validated");
+                    }
+                    else
+                    {
+                        DIAG_LOGE("Unable to validate OTA image: {}", esp_err_to_name(err));
+                        if (sMqttHelper != nullptr)
+                            sMqttHelper->PublishOtaStatus("Failed", esp_err_to_name(err));
+                    }
                 }
                 else
                 {
                     DIAG_LOGE("Rollback and reboot!");
+                    if (sMqttHelper != nullptr)
+                        sMqttHelper->PublishOtaStatus("Rollback requested");
                     esp_ota_mark_app_invalid_rollback();
                     sDiagralManager->Reboot();
                 }
@@ -191,9 +205,36 @@ namespace Diagral
     }
     void DiagralManager::Upgrade(std::string url)
     {
+        if (mOtaInProgress.exchange(true))
+        {
+            DIAG_LOGE("OTA already in progress; duplicate request rejected");
+            return;
+        }
+        mOtaUrl = std::move(url);
+        if (xTaskCreate(UpgradeTask, "ota_update", 12288, this, tskIDLE_PRIORITY + 1, nullptr) != pdPASS)
+        {
+            mOtaInProgress.store(false);
+            DIAG_LOGE("Unable to create OTA task");
+            if (sMqttHelper != nullptr)
+                sMqttHelper->PublishOtaStatus("Failed", "ESP_ERR_NO_MEM");
+        }
+    }
+
+    void DiagralManager::UpgradeTask(void *arg)
+    {
+        auto *manager = static_cast<DiagralManager *>(arg);
+        manager->RunUpgrade();
+        manager->mOtaInProgress.store(false);
+        vTaskDelete(nullptr);
+    }
+
+    void DiagralManager::RunUpgrade()
+    {
         DIAG_LOGI("Starting OTA");
+        if (sMqttHelper != nullptr)
+            sMqttHelper->PublishOtaStatus("Update in progress");
         esp_http_client_config_t config = {};
-        config.url = url.c_str();
+        config.url = mOtaUrl.c_str();
         config.cert_pem = (char *)server_cert_pem_start;
         config.keep_alive_enable = true;
 #if CONFIG_MBEDTLS_DYNAMIC_BUFFER
@@ -205,16 +246,22 @@ namespace Diagral
         ota_config.http_config = &config;
         ota_config.ota_resumption = false;
 
-        DIAG_LOGI("Attempting to download update from {}", url);
+        DIAG_LOGI("Attempting to download update from {}", mOtaUrl);
         esp_err_t ret = esp_https_ota(&ota_config);
+        DIAG_LOGI("OTA task minimum free stack: {} bytes", uxTaskGetStackHighWaterMark(nullptr));
         if (ret == ESP_OK)
         {
             DIAG_LOGI("OTA Succeed, Rebooting...");
+            if (sMqttHelper != nullptr)
+                sMqttHelper->PublishOtaStatus("Restart requested");
+            vTaskDelay(pdMS_TO_TICKS(500));
             Reboot();
         }
         else
         {
             DIAG_LOGE("Firmware upgrade failed");
+            if (sMqttHelper != nullptr)
+                sMqttHelper->PublishOtaStatus("Failed", esp_err_to_name(ret));
         }
     }
     void DiagralManager::NotifyMQTTConnectionState(bool connected)

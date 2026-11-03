@@ -18,10 +18,12 @@ Discovery message exposes controller description and mandatory fields required b
 - Diagral logging configuration (change is applied after reboot)
 - Diagral passive mode configuration (change is applied after reboot)
 - _Reboot_ button: this button orders an immediate soft reboot of the controller
-- _OTA Upgrade URL_ text: this input can be used to send an OTA update request by providing the URL of the .bin file
+- _OTA Upgrade URL_ text: stores the firmware URL without starting an update
+- _OTA Upgrade_ button: starts an update using the saved URL
+- _OTA Status_ sensor: reports update, validation and failure events
 
 Here is an example of discovery message sent to this topic:
-```
+```json
 {
 	"dev":	{
 		"ids":	"diagral-esp32",
@@ -34,7 +36,7 @@ Here is an example of discovery message sent to this topic:
 		"url":	"https://github.com/nicolas5000/diagral-esp32",
 		"sw":	"1"
 	},
-	"availability_topic":	"diagral-esp32/status",
+	"availability": [{"topic": "diagral-esp32/status"}],
 	"cmps":	{
 		"reboot":	{
 			"p":	"button",
@@ -49,7 +51,37 @@ Here is an example of discovery message sent to this topic:
 			"entity_category":	"config",
 			"visible_by_default":	false,
 			"command_topic":	"diagral-esp32/ota_upgrade/set",
-			"command_template":	"{\"url\": \"{{ value }}\"}"
+			"state_topic": "diagral-esp32/ota_upgrade/state",
+			"min": 0,
+			"max": 255,
+			"retain": false,
+			"command_template": "{\"url\": {{ value | to_json }}}"
+		},
+		"ota_button": {
+			"p": "button",
+			"unique_id": "diagral-esp32_button_ota_upgrade",
+			"name": "OTA Upgrade",
+			"entity_category": "config",
+			"command_topic": "diagral-esp32/button_ota_upgrade/set",
+			"payload_press": "PRESS",
+			"retain": false,
+			"availability": [
+				{"topic": "diagral-esp32/status"},
+				{
+					"topic": "diagral-esp32/ota_upgrade/state",
+					"value_template": "{{ 'online' if value | length > 0 else 'offline' }}"
+				}
+			],
+			"availability_mode": "all"
+		},
+		"ota_status": {
+			"p": "sensor",
+			"unique_id": "diagral-esp32_ota_status",
+			"name": "OTA Status",
+			"entity_category": "diagnostic",
+			"state_topic": "diagral-esp32/ota_status/state",
+			"value_template": "{{ value_json.status }}",
+			"json_attributes_topic": "diagral-esp32/ota_status/state"
 		},
 		"Logging":	{
 			"p":	"switch",
@@ -193,3 +225,28 @@ Here is an example of discovery message sent to this topic:
 
 All topics are prefixed by _MQTT_TOPIC_PREFIX_, that is by default _diagral-uart_  
 All topics and payloads are described in discovery messages and compatible with Home Assistant, so they will not be described here. See [Home Assistant MQTT documentation](https://www.home-assistant.io/integrations/mqtt/) for more details.
+
+### OTA workflow
+
+The OTA URL command has changed behavior: sending a URL only saves it. Existing MQTT publishers must send a separate button command to start an update. Use the configured _MQTT_TOPIC_PREFIX_ in place of `<prefix>` below.
+
+1. Publish `{"url":"https://firmware.example.test/diagral-uart-esp32.bin"}` to `<prefix>/ota_upgrade/set`, without retain. This saves the URL in the dedicated `ota` NVS namespace and publishes its retained plain-text value on `<prefix>/ota_upgrade/state`.
+2. Publish `PRESS` to `<prefix>/button_ota_upgrade/set`, without retain, to start the update. Concurrent update requests are rejected. The Home Assistant button is available only while the device is online and the stored URL is nonempty; availability does not check the server itself.
+3. Observe `<prefix>/ota_status/state`. The retained JSON payload contains `status` and `detail`; ESP-IDF failures include an error name in `detail`.
+
+URLs must end in `.bin`, include a nonempty host and path, and be at most 255 characters. Credentials, query strings, fragments, whitespace and embedded NUL characters are rejected. HTTPS is required when _Allow OTA update only over HTTPS_ is enabled; otherwise the existing HTTP-only URL scheme selection is preserved. The configured server certificate and certificate-name verification are unchanged. Sending `{"url":""}` clears the saved URL and disables updates until another URL is configured. The saved URL is restored after reboot and republished on MQTT reconnect.
+
+Retained or fragmented OTA commands are rejected. Do not retain URL commands or button presses: only URL state and status messages are retained.
+
+| Status | Meaning |
+| --- | --- |
+| `Ready` / `URL not configured` | URL saved or cleared, or an update was requested without a configured URL. |
+| `Update in progress` | The dedicated OTA task is downloading and installing firmware. |
+| `Restart requested` | Installation succeeded and a reboot was requested. |
+| `Validation pending` | The new image is waiting for the existing connectivity watchdog to validate it. |
+| `Firmware validated` | ESP-IDF accepted the new image and cancelled rollback. |
+| `Rollback requested` | The existing watchdog requested rollback because MQTT did not reconnect in time. |
+| `Failed` | An operation failed; inspect `detail` and local diagnostics. |
+| `Restart after crash` | The device restarted after a panic or watchdog reset, not necessarily caused by OTA. |
+
+Statuses are best-effort events, not a persistent transaction history. A network outage can prevent delivery, and the last retained status can outlive an update. Confirm success by checking the running firmware version and `Firmware validated`. A test of this workflow requires a maintenance window, a trusted update server and an available USB recovery path; never use alarm commands to test OTA.

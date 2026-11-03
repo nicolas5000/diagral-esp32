@@ -3,6 +3,7 @@
 #include "MqttHelpers.hpp"
 #include "SyslogHelpers.hpp"
 #include "DiagralController.hpp"
+#include <atomic>
 
 namespace Diagral
 {
@@ -41,6 +42,11 @@ namespace Diagral
         uint32_t GetTimeSinceMqttDisconnection();
 
     private:
+        std::atomic<bool> mOtaInProgress{false};
+        std::string mOtaUrl;
+        static void UpgradeTask(void *arg);
+        void RunUpgrade();
+
         bool mDiagralPassive = false; // current configuration, initialized at boot
         uint64_t mLastMqttDisconnectionTimestamp; // contains the timestamp when MQTT was disconnected for the last time (or 0 if currently connected)
 

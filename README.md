@@ -78,7 +78,8 @@ These features are currently available:
       - A button is added to reboot the ESP32 board.
       - A switch is added to enable/disable Diagral layer logging (applied after reboot).
       - A switch is added to enable/disable Diagral passive mode (applied after reboot).
-      - A text is added to provide URL of the new firmware for OTA (sending the text will start OTA).
+      - A text stores the firmware URL for OTA without starting an update.
+      - An OTA Upgrade button starts the update, and an OTA Status sensor reports its outcome.
 - Configuration storage to flash
 - [OTA firmware update](#ota-update) (update from Wifi or Ethernet using an HTTP(S) server) with rollback.
 - MQTT connectivity watchdog: if MQTT connection is broken more than 5 minutes, the ESP32 will notify the alarm system and reboot.
@@ -209,6 +210,10 @@ In this mode you can control your alarm system.
 ### OTA update
 In order to update the firmware from Wifi or Ethernet securely, you should use an HTTPS server. If you don't mind, you can also use a simple HTTP server. This section describes the 2 options.
 
+Saving the URL no longer starts an update: it is stored in NVS and reused when the **OTA Upgrade** button is pressed. Clearing the URL disables the button. The download runs in a separate task so it does not block the MQTT event handler. See the [MQTT OTA workflow](doc/mqtt.md#ota-workflow) for URL requirements, command topics and status values.
+
+Keep the update server restricted to your trusted local network. Do not expose it to the Internet.
+
 > [!NOTE]
 > After OTA is performed, the ESP32 will reboot automatically. Then, if MQTT is not able to connect within 60s, the rollback will be performed to reboot on previous firmware.
 
@@ -217,14 +222,16 @@ In order to update the firmware from Wifi or Ethernet securely, you should use a
 2. Open the update port in your firewall
 3. Launch the HTTPS server. You can use the command `python3 simple_ota_https_server.py <BIN_DIR> <PORT> [CERT_DIR]` (simple_ota_https_server.py is in the tools folder)
 4. From Home Assistant, enter the URL of the .bin file: `https://myserver.lan:8070/diagral-uart-esp32.bin` assuming you are using port 8070 on machine myserver.lan
-5. Wait a few time (upgrade should be done in less than 30 seconds)
+5. Press **OTA Upgrade** to start the update.
+6. Wait for the ESP32 to reconnect and for **OTA Status** to report **Firmware validated** after the validation period.
 
 #### OTA over HTTP
 1. Create an empty file named ca_cert.pem and disable option _Allow OTA update only over HTTPS_ in the project configuration before building the firmware
 2. Open the update port in your firewall
 3. Launch the HTTP server. You can use the command `python3 -m http.server 8070 --bind ::` in the build folder containing diagral-uart-esp32.bin
 4. From Home Assistant, enter the URL of the .bin file: `http://myserver.lan:8070/diagral-uart-esp32.bin` assuming you are using port 8070 on machine myserver.lan
-5. Wait a few time (upgrade should be done in less than 30 seconds)
+5. Press **OTA Upgrade** to start the update.
+6. Wait for the ESP32 to reconnect and for **OTA Status** to report **Firmware validated** after the validation period.
 
 ### Home Assistant integration
 The board will be automatically discovered by Home Assistant MQTT integration and provide controls (with control panel for all zones and for each zone), PIN code verification (if enabled in the configuration), events (detection, alert, error), diagnostics and OTA firmware update.
