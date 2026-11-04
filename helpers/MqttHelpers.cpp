@@ -393,22 +393,28 @@ namespace Helpers
         mDiagralManager = manager;
         sLoggerCallback = logger;
         esp_err_t err = ESP_OK;
+        const std::string broker_address = MqttConfig::GetBrokerAddress();
+        const std::string client_username = MqttConfig::GetClientUsername();
+        const std::string client_password = MqttConfig::GetClientPassword();
+        const std::string last_will_topic = MqttConfig::GetTopicPrefix() + MQTT_CLIENT_BIRTH_WILL_TOPIC;
+        std::string broker_certificate;
         // Configure client
         esp_mqtt_client_config_t mqtt_cfg;
         memset(&mqtt_cfg, 0, sizeof(esp_mqtt_client_config_t));
-        mqtt_cfg.broker.address.hostname = MqttConfig::GetBrokerAddress().c_str();
+        mqtt_cfg.broker.address.hostname = broker_address.c_str();
         mqtt_cfg.broker.address.port = MqttConfig::GetBrokerPort();
         bool tls_enabled = MqttConfig::isTLSEnabled();
         mqtt_cfg.broker.address.transport = tls_enabled ? MQTT_TRANSPORT_OVER_SSL : MQTT_TRANSPORT_OVER_TCP;
         if (tls_enabled)
         {
-            mqtt_cfg.broker.verification.certificate = std::string(MQTT_CERTIFICATE_BEGIN + MqttConfig::GetBrokerCertificate() + MQTT_CERTIFICATE_END).c_str();
+            broker_certificate = MQTT_CERTIFICATE_BEGIN + MqttConfig::GetBrokerCertificate() + MQTT_CERTIFICATE_END;
+            mqtt_cfg.broker.verification.certificate = broker_certificate.c_str();
             mqtt_cfg.broker.verification.skip_cert_common_name_check = true;
         }
-        mqtt_cfg.credentials.username = MqttConfig::GetClientUsername().c_str();
-        mqtt_cfg.credentials.authentication.password = MqttConfig::GetClientPassword().c_str();
+        mqtt_cfg.credentials.username = client_username.c_str();
+        mqtt_cfg.credentials.authentication.password = client_password.c_str();
         mqtt_cfg.session.protocol_ver = MQTT_PROTOCOL_V_3_1_1;
-        mqtt_cfg.session.last_will.topic = std::string(MqttConfig::GetTopicPrefix() + MQTT_CLIENT_BIRTH_WILL_TOPIC).c_str();
+        mqtt_cfg.session.last_will.topic = last_will_topic.c_str();
         mqtt_cfg.session.last_will.msg = MQTT_CLIENT_WILL_MSG.c_str();
         mqtt_cfg.session.last_will.msg_len = MQTT_CLIENT_WILL_MSG.length();
         mqtt_cfg.session.last_will.qos = 1;
