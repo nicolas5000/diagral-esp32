@@ -28,6 +28,10 @@ namespace Config
         /// @return ESP_OK if configuration put to storage without error
         static esp_err_t SetAccessPassword(const std::string &password);
 
+        static esp_err_t GetOtaUrl(std::string &url);
+        static esp_err_t SetOtaUrl(const std::string &url);
+        static bool IsOtaUrlValid(const std::string &url);
+
     private:
         /// @brief Get access password from storage
         /// @return current password

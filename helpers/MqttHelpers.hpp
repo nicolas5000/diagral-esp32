@@ -38,6 +38,9 @@ namespace Helpers
         /// Sends a controller device discovery and a separate discovery for each IO device (linked via via_device)
         void SendDiscovery();
 
+        void PublishOtaStatus(const std::string &status, const std::string &detail = "");
+        void PublishBootStatus();
+
         /// @brief Update and send MQTT device state messages over MQTT
         /// @param state up-to-date device state
         void UpdateAndSendDeviceState(const Diagral::DiagralDeviceState &state);
@@ -74,6 +77,7 @@ namespace Helpers
         void OnMqttDisconnected();
 
     private:
+        bool mBootStatusPublished = false;
         Diagral::DiagralManager *mDiagralManager;   // Pointer to DiagralManager object
         bool mStarted;                              // true if client is started
         bool mIsDiagralPassive;                     // true if Diagral is in passive mode

@@ -1,6 +1,7 @@
 #include "MqttHelpers.hpp"
 #include "MqttConfig.hpp"
 #include "DiagralConfig.hpp"
+#include "MiscConfig.hpp"
 #include "NetworkHelpers.hpp"
 
 #include <algorithm>
@@ -14,6 +15,9 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "nvs.h"
+#include "esp_ota_ops.h"
+#include "esp_system.h"
 
 #ifdef CONFIG_CONNECTIVITY_CHOICE_WIFI
 #include "esp_wifi.h"
@@ -54,6 +58,8 @@ static const std::string MQTT_CLIENT_REBOOT_ID = "button_reboot"; // unique id s
 
 static const std::string MQTT_CLIENT_OTA_UPGRADE_ID = "ota_upgrade"; // unique id suffix and topic for "upgrade" command
 static const std::string MQTT_CLIENT_OTA_URL = "url";                // unique id for "URL" for "upgrade" command
+static const std::string MQTT_CLIENT_OTA_BUTTON_ID = "button_ota_upgrade";
+static const std::string MQTT_CLIENT_OTA_STATUS_ID = "ota_status";
 
 static const std::string MQTT_CLIENT_CONFIG_ID = "config";   // id for configuration components
 static const std::string MQTT_CLIENT_LOGGING_ID = "Logging"; // unique id and action for "Logging" component
@@ -77,6 +83,20 @@ static LoggerCallback sLoggerCallback;                  // Callback to send logs
 
 namespace Helpers
 {
+    static void publish_ota_url(MqttHelpers *helper, esp_mqtt_client_handle_t client)
+    {
+        std::string url;
+        const esp_err_t err = MiscConfig::GetOtaUrl(url);
+        if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND)
+        {
+            DIAG_LOGE("Unable to read OTA URL: {}", esp_err_to_name(err));
+            url.clear();
+        }
+        const std::string topic = helper->GetTopicPrefix() + "/" + MQTT_CLIENT_OTA_UPGRADE_ID + MQTT_CLIENT_STATE_TOPIC;
+        if (esp_mqtt_client_publish(client, topic.c_str(), url.c_str(), 0, 0, 1) < 0)
+            DIAG_LOGE("Unable to publish OTA URL state");
+    }
+
     static void mqtt_reconnect_timer_cb(void *arg)
     {
         static_cast<MqttHelpers *>(arg)->OnNetworkConnected();
@@ -140,6 +160,14 @@ namespace Helpers
             }
             // Send discovery
             mqttHelper->SendDiscovery();
+            publish_ota_url(mqttHelper, client);
+            esp_ota_img_states_t ota_state;
+            const esp_err_t ota_err = esp_ota_get_state_partition(esp_ota_get_running_partition(), &ota_state);
+            if (ota_err == ESP_OK && ota_state == ESP_OTA_IMG_PENDING_VERIFY)
+                mqttHelper->PublishOtaStatus("Validation pending");
+            else if (ota_err != ESP_OK && ota_err != ESP_ERR_NOT_FOUND)
+                DIAG_LOGE("Unable to read OTA validation state: {}", esp_err_to_name(ota_err));
+            mqttHelper->PublishBootStatus();
             // Re-publish device info, current state and last events so HA is immediately up-to-date
             mqttHelper->SendDeviceState(true, true, true, true, true);
             // subscribe to all command topics
@@ -164,6 +192,11 @@ namespace Helpers
             break;
         case MQTT_EVENT_DATA:
         {
+            if (event->topic == nullptr || event->topic_len <= 0)
+            {
+                DIAG_LOGE("Rejected MQTT command without topic (fragmented payload)");
+                break;
+            }
             // ESP_LOGI(TAG, "MQTT_EVENT_DATA");
             // ESP_LOGI(TAG, "TOPIC=%.*s\r\n", event->topic_len, event->topic);
             // ESP_LOGI(TAG, "DATA=%.*s\r\n", event->data_len, event->data);
@@ -181,9 +214,40 @@ namespace Helpers
                         DIAG_LOGI("REBOOT requested from MQTT!");
                         mqttHelper->GetDiagralManager()->Reboot();
                     }
+                    else if (entity_id == MQTT_CLIENT_OTA_BUTTON_ID)
+                    {
+                        if (event->retain || event->current_data_offset != 0 ||
+                            event->data_len != event->total_data_len ||
+                            std::string(event->data, event->data_len) != "PRESS")
+                        {
+                            DIAG_LOGE("Rejected retained, fragmented or invalid OTA button command");
+                            break;
+                        }
+                        std::string url;
+                        const esp_err_t err = MiscConfig::GetOtaUrl(url);
+                        if (err == ESP_ERR_NVS_NOT_FOUND || (err == ESP_OK && url.empty()))
+                        {
+                            DIAG_LOGE("Cannot start OTA: OTA Upgrade URL is empty; configure it first");
+                            mqttHelper->PublishOtaStatus("URL not configured");
+                            break;
+                        }
+                        if (err != ESP_OK)
+                        {
+                            DIAG_LOGE("Cannot read OTA URL: {}", esp_err_to_name(err));
+                            mqttHelper->PublishOtaStatus("Failed", esp_err_to_name(err));
+                            break;
+                        }
+                        DIAG_LOGI("UPGRADE requested from MQTT button!");
+                        mqttHelper->GetDiagralManager()->Upgrade(url);
+                    }
                     else if (entity_id.compare(MQTT_CLIENT_OTA_UPGRADE_ID) == 0)
                     {
-                        DIAG_LOGI("UPGRADE requested from MQTT!");
+                        if (event->retain || event->current_data_offset != 0 ||
+                            event->data_len != event->total_data_len)
+                        {
+                            DIAG_LOGE("Rejected retained or fragmented OTA URL command");
+                            break;
+                        }
                         // Let's parse the JSON
                         char *buf = new char[event->data_len + 1];
                         if (buf == nullptr)
@@ -204,20 +268,21 @@ namespace Helpers
                         cJSON *urlItem = cJSON_GetObjectItem(root, MQTT_CLIENT_OTA_URL.c_str());
                         if (cJSON_IsString(urlItem))
                         {
-                            std::string value(urlItem->valuestring);
-                            if (value.ends_with(".bin") &&
-#if CONFIG_OTA_UPDATE_HTTPS_ONLY
-                                value.starts_with("https://")
-#else
-                                value.starts_with("http://")
-#endif
-                            )
+                            const std::string value(urlItem->valuestring);
+                            const esp_err_t err = MiscConfig::SetOtaUrl(value);
+                            if (err == ESP_OK)
                             {
-                                mqttHelper->GetDiagralManager()->Upgrade(value);
+                                if (value.empty())
+                                    DIAG_LOGI("OTA URL cleared; update disabled until a URL is configured");
+                                else
+                                    DIAG_LOGI("OTA URL saved; press OTA Upgrade to start update");
+                                publish_ota_url(mqttHelper, client);
+                                mqttHelper->PublishOtaStatus(value.empty() ? "URL not configured" : "Ready");
                             }
                             else
                             {
-                                DIAG_LOGE("Invalid URL for OTA: {}", value);
+                                DIAG_LOGE("Unable to save OTA URL: {}", esp_err_to_name(err));
+                                mqttHelper->PublishOtaStatus("Failed", esp_err_to_name(err));
                             }
                         }
                         else
@@ -500,6 +565,40 @@ namespace Helpers
         }
         // If WiFi is down, OnNetworkConnected() will trigger reconnect when IP is obtained
     }
+    void MqttHelpers::PublishBootStatus()
+    {
+        if (mBootStatusPublished)
+            return;
+        mBootStatusPublished = true;
+        const esp_reset_reason_t reason = esp_reset_reason();
+        if (reason == ESP_RST_PANIC || reason == ESP_RST_INT_WDT ||
+            reason == ESP_RST_TASK_WDT || reason == ESP_RST_WDT)
+            PublishOtaStatus("Restart after crash", "Check serial monitor; previous operation may be incomplete");
+    }
+
+    void MqttHelpers::PublishOtaStatus(const std::string &status, const std::string &detail)
+    {
+        cJSON *data = cJSON_CreateObject();
+        if (data == nullptr)
+        {
+            DIAG_LOGE("Unable to allocate OTA status");
+            return;
+        }
+        const bool valid = cJSON_AddStringToObject(data, "status", status.c_str()) != nullptr &&
+                           cJSON_AddStringToObject(data, "detail", detail.c_str()) != nullptr;
+        char *payload = valid ? cJSON_PrintUnformatted(data) : nullptr;
+        if (payload == nullptr)
+            DIAG_LOGE("Unable to serialize OTA status");
+        else
+        {
+            const std::string topic = mTopicPrefix + "/" + MQTT_CLIENT_OTA_STATUS_ID + MQTT_CLIENT_STATE_TOPIC;
+            if (esp_mqtt_client_publish(mMqttClientHandle, topic.c_str(), payload, 0, 0, 1) < 0)
+                DIAG_LOGE("Unable to publish OTA status");
+            cJSON_free(payload);
+        }
+        cJSON_Delete(data);
+    }
+
     void MqttHelpers::SendDiscovery()
     {
         // See https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery
@@ -539,7 +638,15 @@ namespace Helpers
         }
 
         // Shared availability
-        error = error || (cJSON_AddStringToObject(discovery, "availability_topic", availability_topic.c_str()) == NULL);
+        cJSON *availability = cJSON_AddArrayToObject(discovery, "availability");
+        cJSON *device_availability = availability ? cJSON_CreateObject() : nullptr;
+        if (device_availability == nullptr)
+            error = true;
+        else
+        {
+            cJSON_AddItemToArray(availability, device_availability);
+            error = error || (cJSON_AddStringToObject(device_availability, "topic", availability_topic.c_str()) == NULL);
+        }
 
         // "cmps" (components) section
         cJSON *cmps = NULL;
@@ -581,8 +688,66 @@ namespace Helpers
                 error = error || (cJSON_AddBoolToObject(cmp, "visible_by_default", false) == NULL);
                 std::string upgrade_topic = mTopicPrefix + "/" + MQTT_CLIENT_OTA_UPGRADE_ID + MQTT_CLIENT_COMMAND_TOPIC;
                 error = error || (cJSON_AddStringToObject(cmp, "command_topic", upgrade_topic.c_str()) == NULL); // command_topic
-                std::string command_template = "{\"url\": \"{{ value }}\"}";
+                const std::string state_topic = mTopicPrefix + "/" + MQTT_CLIENT_OTA_UPGRADE_ID + MQTT_CLIENT_STATE_TOPIC;
+                error = error || (cJSON_AddStringToObject(cmp, "state_topic", state_topic.c_str()) == NULL);
+                error = error || (cJSON_AddNumberToObject(cmp, "min", 0) == NULL);
+                error = error || (cJSON_AddNumberToObject(cmp, "max", 255) == NULL);
+                error = error || (cJSON_AddBoolToObject(cmp, "retain", false) == NULL);
+                std::string command_template = "{\"url\": {{ value | to_json }}}";
                 error = error || (cJSON_AddStringToObject(cmp, "command_template", command_template.c_str()) == NULL); // command_template
+            }
+        }
+        if (!error)
+        {
+            cJSON *cmp = cJSON_AddObjectToObject(cmps, "ota_button");
+            if (cmp == NULL)
+                error = true;
+            else
+            {
+                const std::string unique_id = discoveryId + "_" + MQTT_CLIENT_OTA_BUTTON_ID;
+                const std::string topic = mTopicPrefix + "/" + MQTT_CLIENT_OTA_BUTTON_ID + MQTT_CLIENT_COMMAND_TOPIC;
+                error = error || (cJSON_AddStringToObject(cmp, "p", "button") == NULL);
+                error = error || (cJSON_AddStringToObject(cmp, "unique_id", unique_id.c_str()) == NULL);
+                error = error || (cJSON_AddStringToObject(cmp, "name", "OTA Upgrade") == NULL);
+                error = error || (cJSON_AddStringToObject(cmp, "entity_category", "config") == NULL);
+                error = error || (cJSON_AddStringToObject(cmp, "command_topic", topic.c_str()) == NULL);
+                error = error || (cJSON_AddStringToObject(cmp, "payload_press", "PRESS") == NULL);
+                error = error || (cJSON_AddBoolToObject(cmp, "retain", false) == NULL);
+                cJSON *button_availability = cJSON_Duplicate(availability, true);
+                cJSON *url_availability = button_availability ? cJSON_CreateObject() : nullptr;
+                if (url_availability == nullptr)
+                {
+                    cJSON_Delete(button_availability);
+                    error = true;
+                }
+                else
+                {
+                    cJSON_AddItemToObject(cmp, "availability", button_availability);
+                    cJSON_AddItemToArray(button_availability, url_availability);
+                    const std::string url_topic = mTopicPrefix + "/" + MQTT_CLIENT_OTA_UPGRADE_ID + MQTT_CLIENT_STATE_TOPIC;
+                    error = error || (cJSON_AddStringToObject(url_availability, "topic", url_topic.c_str()) == NULL);
+                    error = error || (cJSON_AddStringToObject(url_availability, "value_template",
+                        "{{ 'online' if value | length > 0 else 'offline' }}") == NULL);
+                    error = error || (cJSON_AddStringToObject(cmp, "availability_mode", "all") == NULL);
+                }
+            }
+        }
+        if (!error)
+        {
+            cJSON *cmp = cJSON_AddObjectToObject(cmps, MQTT_CLIENT_OTA_STATUS_ID.c_str());
+            if (cmp == NULL)
+                error = true;
+            else
+            {
+                const std::string unique_id = discoveryId + "_" + MQTT_CLIENT_OTA_STATUS_ID;
+                const std::string topic = mTopicPrefix + "/" + MQTT_CLIENT_OTA_STATUS_ID + MQTT_CLIENT_STATE_TOPIC;
+                error = error || (cJSON_AddStringToObject(cmp, "p", "sensor") == NULL);
+                error = error || (cJSON_AddStringToObject(cmp, "unique_id", unique_id.c_str()) == NULL);
+                error = error || (cJSON_AddStringToObject(cmp, "name", "OTA Status") == NULL);
+                error = error || (cJSON_AddStringToObject(cmp, "entity_category", "diagnostic") == NULL);
+                error = error || (cJSON_AddStringToObject(cmp, "state_topic", topic.c_str()) == NULL);
+                error = error || (cJSON_AddStringToObject(cmp, "value_template", "{{ value_json.status }}") == NULL);
+                error = error || (cJSON_AddStringToObject(cmp, "json_attributes_topic", topic.c_str()) == NULL);
             }
         }
         if (!error)
