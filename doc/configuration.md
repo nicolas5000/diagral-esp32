@@ -77,6 +77,21 @@ This section permits to configure GPIO for SPI HOST2 and/or HOST3 if available a
 - SPI MOSI
 - SPI MISO
 
+#### External power monitoring parameters
+This optional section is disabled by default (`CONFIG_DIAGRAL_EXT_POWER_ENABLED`). It is useful when the alarm system is powered through an external UPS: the alarm system then never sees a mains loss and doesn't report it, but the ESP32 can detect it by measuring the external power supply before the UPS. When enabled, an _External power_ binary sensor is exposed to Home Assistant (see [MQTT](mqtt.md)).
+
+This section permits to configure:
+- ADC unit and ADC channel connected to the external power measurement
+- Threshold (in mV, measured on the ADC pin) above which external power is considered present. A 100 mV hysteresis is applied around this threshold. The input is checked every second.
+
+Wiring: connect the external power supply (for example 5 V, before the UPS input) to the ADC pin through a voltage divider. The voltage on the ADC pin shall always remain under 3.3 V:
+```
+External power (5 V) ── R1 100 kΩ ──┬── ADC pin
+                                    ├── R2 100 kΩ ── GND
+                                    └── capacitor 10 nF to 1 µF ── GND
+```
+With two 100 kΩ resistors, 5 V gives about 2.5 V on the ADC pin, and the default threshold (1800 mV) reports the external power as present above about 3.8 V and absent below about 3.4 V. Keep the divider impedance moderate (a few hundred kΩ at most): some UPS modules leak a small current from the battery back to their input, which shows the battery voltage on a high-impedance voltmeter, but is absorbed by the divider. Check the voltage on the ADC pin with and without external power before relying on the sensor.
+
 ### After building the firmware
 Most of the parameters, excluding hardware configuration, can be changes using the command line / console interface available on serial interface (or USB to serial interface). Check these commands:
 - config_network for configuration related to IPv4 / DHCP / DNS / NTP

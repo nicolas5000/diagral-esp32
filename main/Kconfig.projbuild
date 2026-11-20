@@ -396,7 +396,9 @@ menu "Diagral UART Project Configuration"
             default 1800
             help
                 A 5 V supply through two identical resistors gives about 2500 mV on the ADC.
-                A 100 mV hysteresis is applied around this threshold.
+                A 100 mV hysteresis is applied around this threshold. Keep the divider
+                impedance moderate (a few hundred kOhm at most), so that a small leakage
+                current from an UPS battery does not keep a voltage on the input.
     endmenu
 
     menu "SPI_HOST2 Configuration"
