@@ -81,6 +81,12 @@ namespace Diagral
         DIAGRAL_SENSOR_MOVEMENT = 0x01,
         DIAGRAL_SENSOR_OPENING = 0X02
     };
+    enum DiagralExternalPower
+    {
+        DIAGRAL_EXT_POWER_UNKNOWN = 0,
+        DIAGRAL_EXT_POWER_PRESENT,
+        DIAGRAL_EXT_POWER_ABSENT
+    };
     struct DiagralAlert
     {
         DiagralAlertType type;
@@ -105,6 +111,7 @@ namespace Diagral
     {
         bool error;               // currently in error state
         uint8_t battery;          // current battery status, 0-100%
+        DiagralExternalPower externalPower; // external (mains) power presence measured by the board
         DiagralLanguage language; // Current language
         DiagralMode mode;         // Current mode
         DiagralState zone1;

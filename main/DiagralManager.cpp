@@ -103,6 +103,10 @@ namespace Diagral
         {
             DIAG_LOGI("Battery updated: {}%", state.battery);
         }
+        if (sDiagralManager->mDiagralDeviceState.externalPower != state.externalPower)
+        {
+            DIAG_LOGI("External power updated: {}", state.externalPower == DIAGRAL_EXT_POWER_PRESENT ? "present" : "absent");
+        }
         memcpy((void *)&sDiagralManager->mDiagralDeviceState, (void *)&state, sizeof(state));
         // send updated state to MQTT
         if (sMqttHelper != nullptr)
@@ -295,6 +299,13 @@ namespace Diagral
                 .min_voltage_mv = CONFIG_DIAGRAL_BATTERY_VOLTAGE_MIN,
                 .max_voltage_mv = CONFIG_DIAGRAL_BATTERY_VOLTAGE_MAX};
             mDiagralController->MonitorBattery(config);
+#endif
+#ifdef CONFIG_DIAGRAL_EXT_POWER_ENABLED
+            ExternalPowerMonitorConfig extPowerConfig = {
+                .adc_unit = (adc_unit_t)(CONFIG_DIAGRAL_EXT_POWER_ADC_UNIT - 1),
+                .adc_channel = (adc_channel_t)CONFIG_DIAGRAL_EXT_POWER_ADC_CHANNEL,
+                .threshold_mv = CONFIG_DIAGRAL_EXT_POWER_THRESHOLD_MV};
+            mDiagralController->MonitorExternalPower(extPowerConfig);
 #endif
         }
     }

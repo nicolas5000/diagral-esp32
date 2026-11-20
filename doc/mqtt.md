@@ -20,6 +20,7 @@ Discovery message exposes controller description and mandatory fields required b
 - _Reboot_ button: this button orders an immediate soft reboot of the controller
 - _OTA Upgrade URL_ text: stores the firmware URL without starting an update
 - _OTA Upgrade_ button: starts an update using the saved URL
+- _External power_ binary sensor: only exposed when external power monitoring is enabled in the configuration (`CONFIG_DIAGRAL_EXT_POWER_ENABLED`). It reports whether the external power supply (mains) is present, measured on an ADC input through a voltage divider. This is useful when an external UPS keeps the alarm system powered during a mains loss, so that the alarm system itself does not report it.
 - _OTA Status_ sensor: reports update, validation and failure events
 
 Here is an example of discovery message sent to this topic:
@@ -129,6 +130,14 @@ Here is an example of discovery message sent to this topic:
 			"unit_of_measurement":	"%",
 			"state_topic":	"diagral-esp32/info",
 			"value_template":	"{{ value_json.battery }}"
+		},
+		"ext_power":	{
+			"p":	"binary_sensor",
+			"unique_id":	"diagral-esp32_ext_power",
+			"name":	"External power",
+			"device_class":	"power",
+			"state_topic":	"diagral-esp32/info",
+			"value_template":	"{{ value_json.ext_power | default('None') }}"
 		},
 		"panel":	{
 			"p":	"alarm_control_panel",

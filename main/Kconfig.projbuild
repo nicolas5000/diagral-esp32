@@ -367,6 +367,40 @@ menu "Diagral UART Project Configuration"
             default 2050
     endmenu
 
+    menu "External Power Monitoring"
+
+        config DIAGRAL_EXT_POWER_ENABLED
+            bool "Enable external (mains) power presence monitoring"
+            default n
+            help
+                Reads the external power supply through a voltage divider on an ADC input
+                and reports its presence over MQTT. Useful when an external UPS keeps the
+                alarm system powered, so that the alarm system itself does not see a mains loss.
+
+        config DIAGRAL_EXT_POWER_ADC_UNIT
+            depends on DIAGRAL_EXT_POWER_ENABLED
+            int "ADC Unit"
+            range 1 2
+            default 1
+
+        config DIAGRAL_EXT_POWER_ADC_CHANNEL
+            depends on DIAGRAL_EXT_POWER_ENABLED
+            int "ADC channel"
+            range 0 9
+            default 3
+
+        config DIAGRAL_EXT_POWER_THRESHOLD_MV
+            depends on DIAGRAL_EXT_POWER_ENABLED
+            int "ADC voltage (mV) above which external power is present"
+            range 200 3100
+            default 1800
+            help
+                A 5 V supply through two identical resistors gives about 2500 mV on the ADC.
+                A 100 mV hysteresis is applied around this threshold. Keep the divider
+                impedance moderate (a few hundred kOhm at most), so that a small leakage
+                current from an UPS battery does not keep a voltage on the input.
+    endmenu
+
     menu "SPI_HOST2 Configuration"
         depends on ETHERNET_SPI_HOST2 || IOHOMECONTROL_SX1276_SPI_HOST2
 
