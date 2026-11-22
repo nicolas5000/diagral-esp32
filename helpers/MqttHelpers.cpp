@@ -39,6 +39,11 @@ static const char *TAG = "MQTTHelper";
     {                                                                                  \
         sLoggerCallback(ESP_LOG_INFO, TAG, std::format(a __VA_OPT__(, ) __VA_ARGS__)); \
     } while (0)
+#define DIAG_LOGW(a, ...)                                                              \
+    do                                                                                 \
+    {                                                                                  \
+        sLoggerCallback(ESP_LOG_WARN, TAG, std::format(a __VA_OPT__(, ) __VA_ARGS__)); \
+    } while (0)
 
 using namespace Config;
 using namespace Diagral;
@@ -168,8 +173,10 @@ namespace Helpers
             else if (ota_err != ESP_OK && ota_err != ESP_ERR_NOT_FOUND)
                 DIAG_LOGE("Unable to read OTA validation state: {}", esp_err_to_name(ota_err));
             mqttHelper->PublishBootStatus();
-            // Re-publish device info, current state and last events so HA is immediately up-to-date
-            mqttHelper->SendDeviceState(true, true, true, true, true);
+            // Re-publish device info and current state so HA is immediately up-to-date.
+            // Last events are only re-sent if their publication failed: Home Assistant
+            // treats every message on an event topic as a new event.
+            mqttHelper->SendDeviceStateAfterConnect();
             // subscribe to all command topics
             topic = mqttHelper->GetTopicPrefix() + "/+" + MQTT_CLIENT_COMMAND_TOPIC;
             msg_id = esp_mqtt_client_subscribe(client, topic.c_str(), 0);
@@ -1160,6 +1167,10 @@ namespace Helpers
         // send MQTT messages
         SendDeviceState(send_info, send_state, send_detection, send_alert, send_error);
     }
+    void MqttHelpers::SendDeviceStateAfterConnect()
+    {
+        SendDeviceState(true, true, mDetectionPending, mAlertPending, mErrorPending);
+    }
     void MqttHelpers::SendDeviceState(bool info, bool panel, bool detection, bool alert, bool error)
     {
         if (info && sDiagralDeviceState.lastStateTimestamp != 0)
@@ -1256,9 +1267,12 @@ namespace Helpers
                 else
                 {
                     std::string detectionTopic = GetTopicPrefix() + MQTT_CLIENT_LAST_DETECTION_TOPIC;
-                    esp_mqtt_client_publish(mMqttClientHandle, detectionTopic.c_str(), data, 0, 0, 1);
+                    mDetectionPending = esp_mqtt_client_publish(mMqttClientHandle, detectionTopic.c_str(), data, 0, 0, 1) < 0;
                     cJSON_free((void *)data);
-                    DIAG_LOGI("Sent detection successfully");
+                    if (mDetectionPending)
+                        DIAG_LOGW("Detection not sent, will retry after MQTT reconnect");
+                    else
+                        DIAG_LOGI("Sent detection successfully");
                 }
                 cJSON_Delete(detectionData);
             }
@@ -1285,9 +1299,12 @@ namespace Helpers
                 else
                 {
                     std::string alertTopic = GetTopicPrefix() + MQTT_CLIENT_LAST_ALERT_TOPIC;
-                    esp_mqtt_client_publish(mMqttClientHandle, alertTopic.c_str(), data, 0, 0, 1);
+                    mAlertPending = esp_mqtt_client_publish(mMqttClientHandle, alertTopic.c_str(), data, 0, 0, 1) < 0;
                     cJSON_free((void *)data);
-                    DIAG_LOGI("Sent alert successfully");
+                    if (mAlertPending)
+                        DIAG_LOGW("Alert not sent, will retry after MQTT reconnect");
+                    else
+                        DIAG_LOGI("Sent alert successfully");
                 }
                 cJSON_Delete(alertData);
             }
@@ -1315,9 +1332,12 @@ namespace Helpers
                 else
                 {
                     std::string errorTopic = GetTopicPrefix() + MQTT_CLIENT_LAST_ERROR_TOPIC;
-                    esp_mqtt_client_publish(mMqttClientHandle, errorTopic.c_str(), data, 0, 0, 1);
+                    mErrorPending = esp_mqtt_client_publish(mMqttClientHandle, errorTopic.c_str(), data, 0, 0, 1) < 0;
                     cJSON_free((void *)data);
-                    DIAG_LOGI("Sent last error successfully");
+                    if (mErrorPending)
+                        DIAG_LOGW("Last error not sent, will retry after MQTT reconnect");
+                    else
+                        DIAG_LOGI("Sent last error successfully");
                 }
                 cJSON_Delete(errorData);
             }
