@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <string>
 
 #include "esp_log_level.h"
@@ -53,6 +54,11 @@ namespace Helpers
         /// @param error if true, send last_error message
         void SendDeviceState(bool info, bool panel, bool detection, bool alert, bool error);
 
+        /// @brief Send info and control_panel messages after (re)connection, plus the last
+        /// events whose publication failed. Last events already delivered are not re-sent:
+        /// Home Assistant would handle them as new events.
+        void SendDeviceStateAfterConnect();
+
         const std::string &GetTopicPrefix() { return mTopicPrefix; }
 
         /// @brief Returns pointer to DiagralManager instance
@@ -78,6 +84,10 @@ namespace Helpers
 
     private:
         bool mBootStatusPublished = false;
+        // Last events whose publication failed (QoS 0 messages are dropped while disconnected)
+        std::atomic<bool> mDetectionPending{false};
+        std::atomic<bool> mAlertPending{false};
+        std::atomic<bool> mErrorPending{false};
         Diagral::DiagralManager *mDiagralManager;   // Pointer to DiagralManager object
         bool mStarted;                              // true if client is started
         bool mIsDiagralPassive;                     // true if Diagral is in passive mode

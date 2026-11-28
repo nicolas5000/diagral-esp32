@@ -235,6 +235,10 @@ Here is an example of discovery message sent to this topic:
 All topics are prefixed by _MQTT_TOPIC_PREFIX_, that is by default _diagral-uart_  
 All topics and payloads are described in discovery messages and compatible with Home Assistant, so they will not be described here. See [Home Assistant MQTT documentation](https://www.home-assistant.io/integrations/mqtt/) for more details.
 
+### Events after a reconnect
+
+On each MQTT (re)connection, the device info and control panel state are published again. The last detection, alert and error events are only published again if their previous publication failed, for example because they occurred while the broker was unreachable: Home Assistant handles every message received on an event topic as a new event, so re-sending an event already delivered would report it twice.
+
 ### OTA workflow
 
 The OTA URL command has changed behavior: sending a URL only saves it. Existing MQTT publishers must send a separate button command to start an update. Use the configured _MQTT_TOPIC_PREFIX_ in place of `<prefix>` below.
