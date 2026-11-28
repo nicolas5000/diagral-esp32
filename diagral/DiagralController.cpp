@@ -8,6 +8,7 @@
 #include <esp_adc/adc_oneshot.h>
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
+#include "soc/soc_caps.h"
 
 #include <stdio.h>
 #include <time.h>
@@ -46,6 +47,9 @@ constexpr int64_t STATE_UPDATE_MAX_TIME_US = 3600000000; // 1 hour to next statu
 constexpr int64_t STATE_UPDATE_NEXT_TRY_US = 60000000;   // 60 seconds to wait if Get State failed
 
 constexpr TickType_t UPDATE_VOLTAGE_INTERVAL_MS = 300000; // 300 seconds = 5 minutes
+constexpr TickType_t EXT_POWER_POLL_INTERVAL_MS = 1000;   // 1 second, to report a mains loss quickly
+constexpr int EXT_POWER_HYSTERESIS_MV = 100;              // +/- 100 mV around the external power threshold
+constexpr int EXT_POWER_SAMPLES = 8;                      // samples averaged per external power measurement
 
 constexpr size_t LOG_MESSAGE_MAXSIZE = 256;
 
@@ -71,6 +75,9 @@ namespace Diagral
   static LoggerCallback sLoggerCallback;                  // Callback to send logs to
   static UpdatedDeviceCallback sDeviceStatusCallback;     // Callback to send device status updates to
   static BatteryMonitorConfig sBatteryConfig;             // Structure to store battery config to use in the update thread
+  static ExternalPowerMonitorConfig sExtPowerConfig;      // External power config to use in the monitoring thread
+  static std::mutex sAdcMutex;                            // Protects ADC units shared by battery and external power monitoring
+  static adc_oneshot_unit_handle_t sAdcUnits[SOC_ADC_PERIPH_NUM] = {};
 
   struct LogQueueItem
   {
@@ -132,18 +139,30 @@ namespace Diagral
     }
   }
 
-  /// @brief Low priority task that reads battery voltage
-  /// @param arg not used
-  static void read_battery_voltage_task(void *arg)
+  /// @brief Get the oneshot handle of an ADC unit, creating it at first use.
+  /// A unit can be claimed only once, so battery and external power monitoring share it.
+  /// @param unit_id ADC unit
+  /// @return ADC unit handle
+  static adc_oneshot_unit_handle_t get_adc_unit(adc_unit_t unit_id)
   {
-    adc_oneshot_unit_handle_t adc_handle;
-    adc_oneshot_unit_init_cfg_t init_config = {};
-    init_config.unit_id = sBatteryConfig.adc_unit;
-    init_config.ulp_mode = ADC_ULP_MODE_DISABLE;
-    ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config, &adc_handle));
+    std::lock_guard<std::mutex> lock(sAdcMutex);
+    if (sAdcUnits[unit_id] == NULL)
+    {
+      adc_oneshot_unit_init_cfg_t init_config = {};
+      init_config.unit_id = unit_id;
+      init_config.ulp_mode = ADC_ULP_MODE_DISABLE;
+      ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config, &sAdcUnits[unit_id]));
+    }
+    return sAdcUnits[unit_id];
+  }
+
+  /// @brief Configure an ADC channel and create its calibration scheme
+  /// @return calibration handle
+  static adc_cali_handle_t configure_adc_channel(adc_oneshot_unit_handle_t adc_handle, adc_unit_t unit_id, adc_channel_t channel)
+  {
     adc_cali_curve_fitting_config_t cali_config = {};
-    cali_config.unit_id = init_config.unit_id;
-    cali_config.chan = sBatteryConfig.adc_channel;
+    cali_config.unit_id = unit_id;
+    cali_config.chan = channel;
     cali_config.atten = ADC_ATTEN_DB_12;
     cali_config.bitwidth = ADC_BITWIDTH_12;
     adc_cali_handle_t cali_handle = NULL;
@@ -152,12 +171,32 @@ namespace Diagral
         .atten = ADC_ATTEN_DB_12,    // ~3.3V full-scale voltage
         .bitwidth = ADC_BITWIDTH_12, // 12-bit resolution (0-4095)
     };
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc_handle, sBatteryConfig.adc_channel, &config));
+    std::lock_guard<std::mutex> lock(sAdcMutex);
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc_handle, channel, &config));
+    return cali_handle;
+  }
+
+  /// @brief Read a calibrated ADC voltage, serialized with the other ADC users
+  /// @return voltage in mV on the ADC pin
+  static int read_adc_voltage_mv(adc_oneshot_unit_handle_t adc_handle, adc_cali_handle_t cali_handle, adc_channel_t channel, int &adc_value)
+  {
+    int voltage;
+    std::lock_guard<std::mutex> lock(sAdcMutex);
+    ESP_ERROR_CHECK(adc_oneshot_read(adc_handle, channel, &adc_value));
+    ESP_ERROR_CHECK(adc_cali_raw_to_voltage(cali_handle, adc_value, &voltage));
+    return voltage;
+  }
+
+  /// @brief Low priority task that reads battery voltage
+  /// @param arg not used
+  static void read_battery_voltage_task(void *arg)
+  {
+    adc_oneshot_unit_handle_t adc_handle = get_adc_unit(sBatteryConfig.adc_unit);
+    adc_cali_handle_t cali_handle = configure_adc_channel(adc_handle, sBatteryConfig.adc_unit, sBatteryConfig.adc_channel);
     int adc_value, voltage;
     for (;;)
     {
-      ESP_ERROR_CHECK(adc_oneshot_read(adc_handle, sBatteryConfig.adc_channel, &adc_value));
-      ESP_ERROR_CHECK(adc_cali_raw_to_voltage(cali_handle, adc_value, &voltage));
+      voltage = read_adc_voltage_mv(adc_handle, cali_handle, sBatteryConfig.adc_channel, adc_value);
       if (voltage < sBatteryConfig.min_voltage_mv)
         sDeviceState.battery = 0;
       else if (voltage > sBatteryConfig.max_voltage_mv)
@@ -170,6 +209,39 @@ namespace Diagral
         DIAG_LOGE("read_battery_voltage_task: can't add device state to queue!");
       }
       vTaskDelay(pdMS_TO_TICKS(UPDATE_VOLTAGE_INTERVAL_MS)); // Wait until next loop to check again
+    }
+  }
+
+  /// @brief Low priority task that monitors external (mains) power presence
+  /// @param arg not used
+  static void monitor_external_power_task(void *arg)
+  {
+    adc_oneshot_unit_handle_t adc_handle = get_adc_unit(sExtPowerConfig.adc_unit);
+    adc_cali_handle_t cali_handle = configure_adc_channel(adc_handle, sExtPowerConfig.adc_unit, sExtPowerConfig.adc_channel);
+    for (;;)
+    {
+      int adc_value, sum = 0;
+      for (int i = 0; i < EXT_POWER_SAMPLES; i++)
+        sum += read_adc_voltage_mv(adc_handle, cali_handle, sExtPowerConfig.adc_channel, adc_value);
+      const int voltage = sum / EXT_POWER_SAMPLES;
+      // Hysteresis avoids toggling on a noisy or slowly falling input
+      DiagralExternalPower newState = sDeviceState.externalPower;
+      if (voltage >= sExtPowerConfig.threshold_mv + EXT_POWER_HYSTERESIS_MV)
+        newState = DIAGRAL_EXT_POWER_PRESENT;
+      else if (voltage <= sExtPowerConfig.threshold_mv - EXT_POWER_HYSTERESIS_MV)
+        newState = DIAGRAL_EXT_POWER_ABSENT;
+      else if (newState == DIAGRAL_EXT_POWER_UNKNOWN)
+        newState = voltage >= sExtPowerConfig.threshold_mv ? DIAGRAL_EXT_POWER_PRESENT : DIAGRAL_EXT_POWER_ABSENT;
+      if (newState != sDeviceState.externalPower)
+      {
+        sDeviceState.externalPower = newState;
+        DIAG_LOGI("External power {} (ADC voltage {} mV)", newState == DIAGRAL_EXT_POWER_PRESENT ? "present" : "absent", voltage);
+        if (!xQueueSendToBack(sDeviceStateQueue, &sDeviceState, 0))
+        {
+          DIAG_LOGE("monitor_external_power_task: can't add device state to queue!");
+        }
+      }
+      vTaskDelay(pdMS_TO_TICKS(EXT_POWER_POLL_INTERVAL_MS));
     }
   }
 
@@ -290,6 +362,12 @@ namespace Diagral
     memcpy(&sBatteryConfig, &config, sizeof(BatteryMonitorConfig));
     // start battery voltage monitoring task
     xTaskCreate(read_battery_voltage_task, "read_battery_voltage_task", 4096, NULL, tskIDLE_PRIORITY, NULL);
+  }
+
+  void DiagralController::MonitorExternalPower(ExternalPowerMonitorConfig config)
+  {
+    memcpy(&sExtPowerConfig, &config, sizeof(ExternalPowerMonitorConfig));
+    xTaskCreate(monitor_external_power_task, "monitor_external_power_task", 4096, NULL, tskIDLE_PRIORITY, NULL);
   }
 
   void DiagralController::ProcessReceivedFrameTask()

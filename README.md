@@ -48,6 +48,7 @@ These features are currently available:
   - Mode (idle, setup, test)
   - Zones 1 to 4 status (disarmed, arming, armed, armed "home", triggered)
   - Battery charging state. Note: it works only if you have a battery connected to provide power to the device!
+- Optional external power (mains) presence monitoring, for setups where an external UPS keeps the alarm system powered: see [configuration](doc/configuration.md#external-power-monitoring-parameters)
 - Control the alarm system: Arm/"Arm home"/Disarm with or withour PIN code (choose before building firmware or from command line, can't be modified from MQTT and Home Assistant).
 - Events:
   - Error event: event type (tamper, main power, battery, radio link, internet link, arm cancelled reason), harware type (system, sensor, command, siren), hardware number

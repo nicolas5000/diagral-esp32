@@ -26,6 +26,13 @@ namespace Diagral
     int max_voltage_mv;        // max voltage (in mV), corresponding to 0%
   };
 
+  struct ExternalPowerMonitorConfig
+  {
+    adc_unit_t adc_unit;       // ADC unit to use
+    adc_channel_t adc_channel; // ADC channel to use
+    int threshold_mv;          // ADC voltage (in mV) above which external power is present
+  };
+
   /**
    * @brief Diagral UART Controller
    *
@@ -53,6 +60,11 @@ namespace Diagral
     /// @attention Should be called only once!
     /// @param config battery configuration (ADC, min and max voltage)
     void MonitorBattery(BatteryMonitorConfig config);
+
+    /// @brief Launch thread to monitor external (mains) power presence
+    /// @attention Should be called only once!
+    /// @param config external power configuration (ADC, threshold)
+    void MonitorExternalPower(ExternalPowerMonitorConfig config);
 
     /// @brief Enable/disable verbose logging
     /// @param enable true to enable, false to disable

@@ -853,6 +853,27 @@ namespace Helpers
                 error = error || (cJSON_AddStringToObject(cmp, "value_template", "{{ value_json.battery }}") == NULL); // value_template
             }
         }
+#ifdef CONFIG_DIAGRAL_EXT_POWER_ENABLED
+        if (!error)
+        {
+            // Add 'External power' binary sensor https://www.home-assistant.io/integrations/binary_sensor.mqtt/
+            cJSON *cmp = cJSON_AddObjectToObject(cmps, "ext_power");
+            if (cmp == NULL)
+                error = true;
+            else
+            {
+                error = error || (cJSON_AddStringToObject(cmp, "p", "binary_sensor") == NULL); // platform
+                std::string unique_id = discoveryId + "_ext_power";
+                error = error || (cJSON_AddStringToObject(cmp, "unique_id", unique_id.c_str()) == NULL); // unique_id
+                error = error || (cJSON_AddStringToObject(cmp, "name", "External power") == NULL);       // name
+                error = error || (cJSON_AddStringToObject(cmp, "device_class", "power") == NULL);        // device_class
+                std::string state_topic = mTopicPrefix + MQTT_CLIENT_INFO_TOPIC;
+                error = error || (cJSON_AddStringToObject(cmp, "state_topic", state_topic.c_str()) == NULL); // state_topic
+                // value_json.ext_power is absent until the first measurement: report an unknown state
+                error = error || (cJSON_AddStringToObject(cmp, "value_template", "{{ value_json.ext_power | default('None') }}") == NULL);
+            }
+        }
+#endif
         if (!error)
         {
             // Add 'Control panel' alarm_control_panel https://www.home-assistant.io/integrations/alarm_control_panel.mqtt/
@@ -1140,7 +1161,8 @@ namespace Helpers
             return;
 
         // send device info if updated
-        bool send_info = (sDiagralDeviceState.mode != state.mode) || (sDiagralDeviceState.battery != state.battery) || (sDiagralDeviceState.error != state.error);
+        bool send_info = (sDiagralDeviceState.mode != state.mode) || (sDiagralDeviceState.battery != state.battery) || (sDiagralDeviceState.error != state.error) ||
+                         (sDiagralDeviceState.externalPower != state.externalPower);
 
         // send device state if updated
         bool send_state = sDiagralDeviceState.lastStateTimestamp != state.lastStateTimestamp;
@@ -1171,6 +1193,10 @@ namespace Helpers
                 cJSON_AddStringToObject(infoData, "error", sDiagralDeviceState.error ? "ON" : "OFF");
                 cJSON_AddStringToObject(infoData, "mode", DiagralModeToString(sDiagralDeviceState.mode).c_str());
                 cJSON_AddNumberToObject(infoData, "battery", sDiagralDeviceState.battery);
+#ifdef CONFIG_DIAGRAL_EXT_POWER_ENABLED
+                if (sDiagralDeviceState.externalPower != DIAGRAL_EXT_POWER_UNKNOWN)
+                    cJSON_AddStringToObject(infoData, "ext_power", sDiagralDeviceState.externalPower == DIAGRAL_EXT_POWER_PRESENT ? "ON" : "OFF");
+#endif
                 const char *data = cJSON_Print(infoData);
                 if (data == NULL)
                 {
