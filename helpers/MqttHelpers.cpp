@@ -17,6 +17,7 @@
 #include "esp_timer.h"
 #include "nvs.h"
 #include "esp_ota_ops.h"
+#include "esp_random.h"
 #include "esp_system.h"
 
 #ifdef CONFIG_CONNECTIVITY_CHOICE_WIFI
@@ -457,6 +458,8 @@ namespace Helpers
             return ESP_ERR_INVALID_ARG;
         mDiagralManager = manager;
         sLoggerCallback = logger;
+        // Started once the network is up: the RF subsystem then feeds the hardware RNG
+        mBootId = std::format("{:08x}{:08x}", esp_random(), esp_random());
         esp_err_t err = ESP_OK;
         const std::string broker_address = MqttConfig::GetBrokerAddress();
         const std::string client_username = MqttConfig::GetClientUsername();
@@ -585,7 +588,8 @@ namespace Helpers
             return;
         }
         const bool valid = cJSON_AddStringToObject(data, "status", status.c_str()) != nullptr &&
-                           cJSON_AddStringToObject(data, "detail", detail.c_str()) != nullptr;
+                           cJSON_AddStringToObject(data, "detail", detail.c_str()) != nullptr &&
+                           cJSON_AddStringToObject(data, "boot_id", mBootId.c_str()) != nullptr;
         char *payload = valid ? cJSON_PrintUnformatted(data) : nullptr;
         if (payload == nullptr)
             DIAG_LOGE("Unable to serialize OTA status");

@@ -84,6 +84,7 @@ namespace Helpers
         bool mIsPinCheckEnabled;                    // true if PIN check is enabled
         std::string mTopicPrefix;                   // Topic prefix, initialized from configuration storage at boot (avoid to read it from storage everytime!)
         std::string mDiscoveryPrefix;               // Discovery prefix, initialized from configuration storage at boot (avoid to read it from storage everytime!)
+        std::string mBootId;                        // Random identifier of the current boot, published with OTA statuses
         esp_mqtt_client_handle_t mMqttClientHandle; // Handle on MQTT client
         esp_timer_handle_t mReconnectTimer;         // One-shot timer for broker-drop reconnect
     };
